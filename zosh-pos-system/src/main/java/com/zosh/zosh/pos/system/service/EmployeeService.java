@@ -1,0 +1,17 @@
+package com.zosh.zosh.pos.system.service;
+
+import com.zosh.zosh.pos.system.entity.User;
+import com.zosh.zosh.pos.system.enums.UserRoles;
+import com.zosh.zosh.pos.system.payload.dto.UserDto;
+
+import java.util.List;
+
+public interface EmployeeService {
+    UserDto createStoreEmployee(UserDto employee,Long storeId)throws Exception;
+    UserDto createBranchEmployee(UserDto employee,Long branchId)throws Exception;
+    User updateEmployee(Long employeeId, UserDto employeeDetails)throws Exception;
+    void deleteEmployee(Long employeeId)throws Exception;
+    List<UserDto> findStoreEmployee(Long storeId, UserRoles roles) throws Exception;
+    List<UserDto> findBranchEmployee(Long branchId,UserRoles roles) throws Exception;
+
+}

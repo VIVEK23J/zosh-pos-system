@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Zosh POS - Modern Point of Sale System</title>
+    <script>
+      (function() {
+        try {
+          var saved = localStorage.getItem('pos_theme');
+          var isDark = saved === 'dark' || (saved === 'system' || !saved) && window.matchMedia('(prefers-color-scheme: dark)').matches;
+          if (saved === 'light') isDark = false;
+          if (isDark) {
+            document.documentElement.classList.add('dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+          }
+        } catch (e) {}
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
