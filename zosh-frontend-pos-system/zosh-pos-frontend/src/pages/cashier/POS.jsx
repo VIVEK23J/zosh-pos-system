@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "@/lib/rr-compat";
 import CartSection from "../../components/cart/CartSection";
 
 export function POS() {

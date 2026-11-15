@@ -1,4 +1,4 @@
-import { NavLink } from "react-router-dom";
+import { NavLink } from "@/lib/rr-compat";
 import {
   LayoutDashboard,
   ShoppingCart,
@@ -92,172 +92,28 @@ export function Sidebar({ module = "cashier" }) {
 
   const links = getLinks();
 
-  const getModuleBadge = () => {
-    switch (normalizedModule) {
-      case "cashier":
-        return { label: "Cashier", color: "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300" };
-      case "manager":
-        return { label: "Manager", color: "bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300" };
-      case "store-admin":
-        return { label: "Store Admin", color: "bg-purple-50 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300" };
-      case "super-admin":
-        return { label: "Super Admin", color: "bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300" };
-      default:
-        return { label: "POS", color: "bg-gray-100 text-gray-800" };
-    }
-  };
-
-  const badge = getModuleBadge();
-
+  const label = { cashier: "Cashier", manager: "Branch manager", "store-admin": "Store admin", "super-admin": "Super admin" }[normalizedModule];
+  const portals = [
+    { to: "/super-admin/dashboard", label: "Super admin", icon: Building2 },
+    { to: "/store-admin/dashboard", label: "Store admin", icon: Store },
+    { to: "/manager/dashboard", label: "Branch manager", icon: GitBranch },
+    { to: "/cashier/dashboard", label: "Cashier", icon: ShoppingCart },
+  ];
   return (
-    <aside className="w-64 shrink-0 bg-white dark:bg-gray-900 border-r border-gray-100 dark:border-gray-800 flex flex-col justify-between min-h-screen transition-colors">
-      <div>
-        {/* Brand Banner */}
-        <div className="p-5 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="font-extrabold text-base tracking-tight text-gray-900 dark:text-white">
-                ZOSH POS
-              </span>
-              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${badge.color}`}>
-                {badge.label}
-              </span>
-            </div>
-            <p className="text-[11px] text-gray-400 mt-0.5">
-              {isSuperAdmin ? "Super Admin Full Access" : "Role-Based Control Active"}
-            </p>
-          </div>
-        </div>
-
-        {/* Super Admin Quick Portal Switcher */}
-        {isSuperAdmin && (
-          <div className="p-3 pb-0">
-            <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
-              <ShieldCheck className="size-3.5" />
-              <span>Full Access Portals</span>
-            </div>
-            <div className="grid grid-cols-2 gap-1.5 p-1 bg-gray-50 dark:bg-gray-800/60 rounded-xl border border-gray-100 dark:border-gray-800 text-[11px] font-medium">
-              <NavLink
-                to="/super-admin/dashboard"
-                className={({ isActive }) =>
-                  `px-2 py-1.5 rounded-lg flex items-center gap-1.5 transition ${
-                    isActive
-                      ? "bg-amber-500 text-white font-bold shadow-xs"
-                      : "hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
-                  }`
-                }
-              >
-                <Building2 className="size-3.5" />
-                <span>Super Admin</span>
-              </NavLink>
-              <NavLink
-                to="/store-admin/dashboard"
-                className={({ isActive }) =>
-                  `px-2 py-1.5 rounded-lg flex items-center gap-1.5 transition ${
-                    isActive
-                      ? "bg-purple-600 text-white font-bold shadow-xs"
-                      : "hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
-                  }`
-                }
-              >
-                <Store className="size-3.5" />
-                <span>Store Admin</span>
-              </NavLink>
-              <NavLink
-                to="/manager/dashboard"
-                className={({ isActive }) =>
-                  `px-2 py-1.5 rounded-lg flex items-center gap-1.5 transition ${
-                    isActive
-                      ? "bg-blue-600 text-white font-bold shadow-xs"
-                      : "hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
-                  }`
-                }
-              >
-                <GitBranch className="size-3.5" />
-                <span>Manager</span>
-              </NavLink>
-              <NavLink
-                to="/cashier/dashboard"
-                className={({ isActive }) =>
-                  `px-2 py-1.5 rounded-lg flex items-center gap-1.5 transition ${
-                    isActive
-                      ? "bg-emerald-600 text-white font-bold shadow-xs"
-                      : "hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
-                  }`
-                }
-              >
-                <ShoppingCart className="size-3.5" />
-                <span>Cashier POS</span>
-              </NavLink>
-            </div>
-          </div>
-        )}
-
-        {/* Navigation list */}
-        <div className="p-3 space-y-1">
-          <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-400">
-            {badge.label} Menu
-          </div>
-          {links.map((link) => {
-            const Icon = link.icon;
-            return (
-              <NavLink
-                key={link.path}
-                to={link.path}
-                className={({ isActive }) =>
-                  `flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
-                    isActive
-                      ? "bg-emerald-800 text-white shadow-sm shadow-emerald-900/10"
-                      : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-800/60"
-                  }`
-                }
-              >
-                {({ isActive }) => (
-                  <>
-                    <div className="flex items-center gap-3">
-                      <Icon className={`size-4 ${isActive ? "text-white" : "text-gray-400 dark:text-gray-500"}`} />
-                      <span>{link.name}</span>
-                    </div>
-
-                    {link.badge !== null && link.badge !== undefined && (
-                      <span
-                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                          isActive
-                            ? "bg-white text-emerald-800"
-                            : "bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300"
-                        }`}
-                      >
-                        {link.badge}
-                      </span>
-                    )}
-
-                    {isActive && !link.badge && (
-                      <ChevronRight className="size-3.5 text-emerald-200" />
-                    )}
-                  </>
-                )}
-              </NavLink>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Footer Info */}
-      <div className="p-4 m-3 rounded-2xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-800/80 text-xs">
-        <div className="flex items-center gap-2 mb-1.5">
-          <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span className="font-bold text-gray-800 dark:text-gray-200 text-[11px]">
-            {isSuperAdmin ? "Super Admin Full Access" : `Role: ${badge.label}`}
-          </span>
-        </div>
-        <p className="text-[10px] text-gray-400 leading-relaxed">
-          {isSuperAdmin
-            ? "Master access to Cashier, Branch & Store"
-            : "Spring Security RBAC • Strict Policy"}
-        </p>
-      </div>
+    <aside className="workspace-sidebar">
+      <div className="workspace-brand"><Store className="size-6 text-primary" /><span>Zosh<span className="font-normal text-muted-foreground"> / POS</span></span></div>
+      <div className="workspace-context"><span className="workspace-context-label">WORKSPACE</span><span>{label}</span></div>
+      {isSuperAdmin && <div className="workspace-portals">{portals.map(p => { const Icon = p.icon; return <NavLink key={p.to} to={p.to} title={p.label} className="workspace-portal"><Icon className="size-4" /><span>{p.label}</span></NavLink>; })}</div>}
+      <nav className="workspace-nav" aria-label="Main navigation">
+        {links.map(link => { const Icon = link.icon; return (
+          <NavLink key={link.path} to={link.path} title={link.name} className={({ isActive }) => `workspace-link ${isActive ? "is-active" : ""}`}>
+            <Icon className="size-[18px] shrink-0" strokeWidth={1.7} /><span>{link.name.replace(/Cashier Dashboard|Manager Dashboard|Store Admin Dashboard|Super Admin Dashboard/, "Overview")}</span>
+            {link.badge != null && <span className="workspace-count">{link.badge}</span>}
+          </NavLink>
+        ); })}
+      </nav>
+      <div className="workspace-sidebar-footer"><ShieldCheck className="size-4" /><span>{isSuperAdmin ? "Full access" : label}<small>Zosh Retail</small></span></div>
     </aside>
   );
 }
-
 export default Sidebar;

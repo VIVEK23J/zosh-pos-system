@@ -35,30 +35,11 @@ export function StoreDashboard() {
   }, []);
 
   return (
-    <div className="space-y-6">
-      {/* Store Header Banner */}
-      <div className="p-6 rounded-2xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <span className="text-[10px] font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/80 px-2.5 py-0.5 rounded-full border border-purple-200 dark:border-purple-900">
-            Enterprise Merchant Headquarters
-          </span>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mt-1.5">
-            Zosh Retail Store Master Overview
-          </h1>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-            Omnichannel multi-branch performance, central catalog management and executive sales metrics.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Badge variant="purple" size="lg">
-            Plan: Enterprise Pro
-          </Badge>
-        </div>
-      </div>
+    <div className="professional-dashboard">
+      <div className="page-heading"><div><p className="eyebrow">STORE / PERFORMANCE</p><h1>Store overview</h1><p className="page-subtitle">Zosh Retail Store</p></div><Badge variant="default">Enterprise Pro</Badge></div>
 
       {/* KPI Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="summary-band">
         <StatCard
           title="Total Store Revenue"
           value={`₹${(metrics.totalRevenue || 582490).toLocaleString("en-IN")}`}
@@ -101,7 +82,7 @@ export function StoreDashboard() {
       </div>
 
       {/* Branch Comparison Bar Chart */}
-      <div className="p-6 rounded-2xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-sm space-y-4">
+      <div className="dashboard-section space-y-4">
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-base font-bold text-gray-900 dark:text-white">
@@ -116,47 +97,30 @@ export function StoreDashboard() {
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={branchData}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.2} />
-              <XAxis dataKey="branch" stroke="#888" fontSize={11} tickLine={false} />
+              <XAxis dataKey="branch" stroke="var(--muted-foreground)" fontSize={11} tickLine={false} />
               <YAxis
-                stroke="#888"
+                stroke="var(--muted-foreground)"
                 fontSize={11}
                 tickLine={false}
                 tickFormatter={(v) => `₹${v / 1000}k`}
               />
               <Tooltip
                 formatter={(val) => [`₹${val.toLocaleString()}`, "Gross Revenue"]}
-                contentStyle={{ borderRadius: "12px", border: "none", fontSize: "12px" }}
+                contentStyle={{ borderRadius: "6px", border: "none", fontSize: "12px" }}
               />
-              <Bar dataKey="revenue" fill="#6366f1" radius={[6, 6, 0, 0]} />
+              <Bar dataKey="revenue" fill="var(--primary)" radius={[6, 6, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
       </div>
 
       {/* Branch Outlets Grid */}
-      <div className="p-6 rounded-2xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-sm space-y-4">
+      <div className="dashboard-section space-y-4">
         <h3 className="text-base font-bold text-gray-900 dark:text-white">
           Retail Outlets & Operating Branches
         </h3>
 
-        <div className="grid md:grid-cols-3 gap-4">
-          {branches.map((b) => (
-            <div
-              key={b.id}
-              className="p-4 rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/40 space-y-2 text-xs"
-            >
-              <div className="flex justify-between items-start">
-                <h4 className="font-bold text-gray-900 dark:text-white text-sm">{b.name}</h4>
-                <Badge variant="success" size="sm">Active</Badge>
-              </div>
-              <p className="text-gray-500 leading-relaxed">{b.address}</p>
-              <div className="pt-2 border-t border-gray-200 dark:border-gray-700 flex justify-between text-[11px] text-gray-400">
-                <span>Manager: {b.managerName}</span>
-                <span>{b.phone}</span>
-              </div>
-            </div>
-          ))}
-        </div>
+        <div className="overflow-x-auto"><table className="workspace-table"><thead><tr><th>Branch</th><th>Address</th><th>Manager</th><th>Phone</th><th>Status</th></tr></thead><tbody>{branches.map(b => <tr key={b.id}><td className="font-semibold">{b.name}</td><td>{b.address}</td><td>{b.managerName}</td><td>{b.phone}</td><td><Badge variant="success" size="sm">Active</Badge></td></tr>)}</tbody></table></div>
       </div>
     </div>
   );

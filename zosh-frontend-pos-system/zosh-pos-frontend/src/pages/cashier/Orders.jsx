@@ -13,6 +13,7 @@ import {
   QrCode,
   Hash,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { orderService } from "../../services/orderService";
 import { Badge } from "../../components/common/Badge";
 import { Modal } from "../../components/common/Modal";
@@ -112,13 +113,13 @@ export function Orders() {
   return (
     <div className="space-y-6">
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-2xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-sm">
+      <div className="page-heading">
         <div>
           <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-            Order History & Invoices
+            Order history
           </h1>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-            Real database transaction records with Order IDs, payment tender details and customer receipts
+            Transactions & receipts
           </p>
         </div>
 
@@ -126,19 +127,19 @@ export function Orders() {
           <Badge variant="success" size="lg">
             {filteredOrders.length} {filteredOrders.length === 1 ? "Order" : "Orders"}
           </Badge>
-          <button
+          <Button variant="ghost"
             type="button"
             onClick={loadOrders}
             className="p-2 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition text-xs font-semibold"
             title="Refresh Orders"
           >
             Refresh
-          </button>
+          </Button>
         </div>
       </div>
 
       {/* Filters & Search */}
-      <div className="p-4 rounded-2xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 flex flex-wrap items-center justify-between gap-3">
+      <div className="list-toolbar">
         <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 w-full sm:w-80">
           <Search className="size-4 text-gray-400 shrink-0" />
           <input
@@ -149,9 +150,9 @@ export function Orders() {
             className="w-full bg-transparent text-xs outline-none text-gray-900 dark:text-white"
           />
           {search && (
-            <button onClick={() => setSearch("")} className="text-gray-400 hover:text-gray-600">
+            <Button variant="ghost" onClick={() => setSearch("")} className="text-gray-400 hover:text-gray-600">
               <X className="size-3.5" />
-            </button>
+            </Button>
           )}
         </div>
 
@@ -164,7 +165,7 @@ export function Orders() {
             { id: "UPI", label: "UPI" },
             { id: "RAZORPAY", label: "Razorpay" },
           ].map((tab) => (
-            <button
+            <Button variant="ghost"
               key={tab.id}
               onClick={() => setPaymentFilter(tab.id)}
               className={`px-3 py-1.5 rounded-lg font-semibold transition ${
@@ -174,13 +175,13 @@ export function Orders() {
               }`}
             >
               {tab.label}
-            </button>
+            </Button>
           ))}
         </div>
       </div>
 
       {/* Orders Table */}
-      <div className="rounded-2xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 overflow-hidden shadow-sm">
+      <div className="list-results">
         {loading ? (
           <TableSkeleton rows={5} cols={7} />
         ) : filteredOrders.length > 0 ? (
@@ -257,7 +258,7 @@ export function Orders() {
                       </td>
 
                       <td className="px-5 py-4 text-right">
-                        <button
+                        <Button variant="ghost"
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
@@ -267,7 +268,7 @@ export function Orders() {
                           title="View Order Details"
                         >
                           <Eye className="size-4" />
-                        </button>
+                        </Button>
                       </td>
                     </tr>
                   );
@@ -382,21 +383,21 @@ export function Orders() {
 
             {/* Modal Actions */}
             <div className="flex justify-end gap-2 pt-4">
-              <button
+              <Button variant="ghost"
                 type="button"
                 onClick={() => window.print()}
                 className="px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-xs font-semibold flex items-center gap-1.5 hover:bg-gray-50 transition"
               >
                 <Printer className="size-3.5" />
                 <span>Print Invoice</span>
-              </button>
-              <button
+              </Button>
+              <Button variant="ghost"
                 type="button"
                 onClick={() => setSelectedOrder(null)}
                 className="px-4 py-2 rounded-xl bg-emerald-800 text-white text-xs font-semibold hover:bg-emerald-900 transition"
               >
                 Close
-              </button>
+              </Button>
             </div>
           </div>
         </Modal>

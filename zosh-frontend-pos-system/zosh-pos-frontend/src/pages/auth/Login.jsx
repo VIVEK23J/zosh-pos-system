@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "@/lib/rr-compat";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useDispatch, useSelector } from "react-redux";
 import { Mail, Lock, LogIn, ArrowRight, Sparkles } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { authService } from "../../services/authService";
 import { loginSuccess, setLoading, setError } from "../../store/authSlice";
 import { ROLES, getRoleDashboard } from "../../constants/roles";
@@ -63,21 +64,21 @@ export function Login() {
     <div>
       <div className="mb-8">
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">
-          Sign In to Zosh POS
+          Sign in
         </h2>
         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-          Enter your employee credentials to access your register and dashboard.
+          Welcome back to Zosh POS.
         </p>
       </div>
 
       {/* Role Credentials Quick Switcher */}
-      <div className="mb-6 p-3 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-900/40">
+      <div className="login-role-selector">
         <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-300 mb-2">
-          <Sparkles className="size-3.5" />
-          <span>Quick Role Switcher (Password: 123456)</span>
+          
+          <span>Demo accounts</span>
         </div>
-        <div className="grid grid-cols-2 gap-1.5 text-xs">
-          <button
+        <div className="role-tabs">
+          <Button variant="ghost"
             type="button"
             onClick={() => handleQuickFill(ROLES.CASHIER, "cashier@zoshpos.com")}
             className={`p-1.5 rounded-lg border text-left font-medium transition ${
@@ -87,8 +88,8 @@ export function Login() {
             }`}
           >
             Cashier POS
-          </button>
-          <button
+          </Button>
+          <Button variant="ghost"
             type="button"
             onClick={() => handleQuickFill(ROLES.MANAGER, "manager@zoshpos.com")}
             className={`p-1.5 rounded-lg border text-left font-medium transition ${
@@ -98,8 +99,8 @@ export function Login() {
             }`}
           >
             Branch Manager
-          </button>
-          <button
+          </Button>
+          <Button variant="ghost"
             type="button"
             onClick={() => handleQuickFill(ROLES.STORE_ADMIN, "storeadmin@zoshpos.com")}
             className={`p-1.5 rounded-lg border text-left font-medium transition ${
@@ -109,8 +110,8 @@ export function Login() {
             }`}
           >
             Store Admin
-          </button>
-          <button
+          </Button>
+          <Button variant="ghost"
             type="button"
             onClick={() => handleQuickFill(ROLES.SUPER_ADMIN, "admin@zoshpos.com")}
             className={`p-1.5 rounded-lg border text-left font-medium transition ${
@@ -120,7 +121,7 @@ export function Login() {
             }`}
           >
             Super Admin
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -175,10 +176,10 @@ export function Login() {
           )}
         </div>
 
-        <button
+        <Button variant="ghost"
           type="submit"
           disabled={isLoading}
-          className="w-full py-3 px-4 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white font-semibold text-xs shadow-md shadow-emerald-900/10 transition flex items-center justify-center gap-2 disabled:opacity-50"
+          className="login-submit"
         >
           {isLoading ? (
             "Authenticating..."
@@ -188,7 +189,7 @@ export function Login() {
               <span>Sign In to Register</span>
             </>
           )}
-        </button>
+        </Button>
       </form>
 
       <div className="mt-6 text-center text-xs text-gray-500 dark:text-gray-400">

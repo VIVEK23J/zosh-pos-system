@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "@/lib/rr-compat";
 import {
   Building2,
   GitBranch,
@@ -26,6 +26,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import { Button } from "@/components/ui/button";
 import { StatCard } from "../../components/common/StatCard";
 import { Badge } from "../../components/common/Badge";
 import { storeService } from "../../services/storeService";
@@ -53,117 +54,13 @@ export function AdminDashboard() {
   const pendingStores = stores.filter((s) => s.storeStatus === "PENDING");
 
   return (
-    <div className="space-y-6">
-      {/* Top Banner */}
-      <div className="p-6 rounded-2xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <span className="text-[10px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/80 px-2.5 py-0.5 rounded-full border border-amber-200 dark:border-amber-900">
-            Platform Master Console
-          </span>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mt-1.5">
-            Super Admin Governance Overview
-          </h1>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-            Monitor merchant stores, manage platform subscriptions, approve registrations, and audit cloud activity.
-          </p>
-        </div>
+    <div className="professional-dashboard">
+      <div className="page-heading"><div><p className="eyebrow">PLATFORM / GOVERNANCE</p><h1>Platform overview</h1><p className="page-subtitle">Merchant activity & platform performance</p></div><Badge variant="warning">{pendingStores.length} pending approvals</Badge></div>
 
-        <Badge variant="warning" size="lg">
-          {pendingStores.length} Pending Approval
-        </Badge>
-      </div>
-
-      {/* Super Admin Direct Access Section: Cashier, Branch, Store */}
-      <div>
-        <div className="flex items-center justify-between mb-3">
-          <div>
-            <h3 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
-              <ShieldCheck className="size-4 text-amber-500" />
-              <span>Full Dashboard Access Control</span>
-            </h3>
-            <p className="text-xs text-gray-400 mt-0.5">
-              As Super Admin, you have master access to inspect and operate the Store, Branch, and Cashier dashboards directly.
-            </p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div
-            onClick={() => navigate("/store-admin/dashboard")}
-            className="p-5 rounded-2xl bg-white dark:bg-gray-900 border border-purple-100 dark:border-purple-900/40 hover:border-purple-500 dark:hover:border-purple-500 cursor-pointer transition shadow-xs group"
-          >
-            <div className="flex items-center justify-between mb-3">
-              <div className="size-10 rounded-xl bg-purple-50 dark:bg-purple-950/80 text-purple-700 dark:text-purple-300 flex items-center justify-center group-hover:scale-110 transition">
-                <Store className="size-5" />
-              </div>
-              <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-purple-50 dark:bg-purple-950 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
-                Store HQ
-              </span>
-            </div>
-            <h4 className="text-base font-bold text-gray-900 dark:text-white group-hover:text-purple-600 transition">
-              Store Admin Dashboard
-            </h4>
-            <p className="text-xs text-gray-400 mt-1 leading-relaxed">
-              Access store branch configuration, product catalog, categories, staff directories, and store settings.
-            </p>
-            <div className="mt-4 flex items-center gap-1.5 text-xs font-bold text-purple-600 dark:text-purple-400">
-              <span>Open Store Dashboard</span>
-              <ArrowRight className="size-3.5 group-hover:translate-x-1 transition" />
-            </div>
-          </div>
-
-          <div
-            onClick={() => navigate("/manager/dashboard")}
-            className="p-5 rounded-2xl bg-white dark:bg-gray-900 border border-blue-100 dark:border-blue-900/40 hover:border-blue-500 dark:hover:border-blue-500 cursor-pointer transition shadow-xs group"
-          >
-            <div className="flex items-center justify-between mb-3">
-              <div className="size-10 rounded-xl bg-blue-50 dark:bg-blue-950/80 text-blue-700 dark:text-blue-300 flex items-center justify-center group-hover:scale-110 transition">
-                <GitBranch className="size-5" />
-              </div>
-              <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
-                Branch Ops
-              </span>
-            </div>
-            <h4 className="text-base font-bold text-gray-900 dark:text-white group-hover:text-blue-600 transition">
-              Branch Manager Dashboard
-            </h4>
-            <p className="text-xs text-gray-400 mt-1 leading-relaxed">
-              Track branch live inventory, inspect store branch orders, monitor staff schedules, and view daily sales reports.
-            </p>
-            <div className="mt-4 flex items-center gap-1.5 text-xs font-bold text-blue-600 dark:text-blue-400">
-              <span>Open Branch Dashboard</span>
-              <ArrowRight className="size-3.5 group-hover:translate-x-1 transition" />
-            </div>
-          </div>
-
-          <div
-            onClick={() => navigate("/cashier/dashboard")}
-            className="p-5 rounded-2xl bg-white dark:bg-gray-900 border border-emerald-100 dark:border-emerald-900/40 hover:border-emerald-500 dark:hover:border-emerald-500 cursor-pointer transition shadow-xs group"
-          >
-            <div className="flex items-center justify-between mb-3">
-              <div className="size-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 flex items-center justify-center group-hover:scale-110 transition">
-                <ShoppingCart className="size-5" />
-              </div>
-              <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
-                POS Terminal
-              </span>
-            </div>
-            <h4 className="text-base font-bold text-gray-900 dark:text-white group-hover:text-emerald-600 transition">
-              Cashier POS Dashboard
-            </h4>
-            <p className="text-xs text-gray-400 mt-1 leading-relaxed">
-              Launch POS register checkout, test transaction billing, review shift reports, and audit customer refunds.
-            </p>
-            <div className="mt-4 flex items-center gap-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400">
-              <span>Open Cashier Terminal</span>
-              <ArrowRight className="size-3.5 group-hover:translate-x-1 transition" />
-            </div>
-          </div>
-        </div>
-      </div>
+      <div className="portal-toolbar"><span>Workspaces</span>{[{label:"Store admin",path:"/store-admin/dashboard",icon:Store},{label:"Branch manager",path:"/manager/dashboard",icon:GitBranch},{label:"Cashier",path:"/cashier/dashboard",icon:ShoppingCart}].map(p => {const Icon=p.icon;return <Button key={p.path} variant="ghost" onClick={() => navigate(p.path)}><Icon />{p.label}<ArrowRight /></Button>;})}</div>
 
       {/* KPI Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
+      <div className="summary-band">
         <StatCard
           title="Total Stores"
           value={stores.length}
@@ -209,7 +106,7 @@ export function AdminDashboard() {
       </div>
 
       {/* Chart Section */}
-      <div className="p-6 rounded-2xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-sm space-y-4">
+      <div className="dashboard-section space-y-4">
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-base font-bold text-gray-900 dark:text-white">
@@ -227,26 +124,26 @@ export function AdminDashboard() {
             <AreaChart data={chartData}>
               <defs>
                 <linearGradient id="adminGmv" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.4} />
-                  <stop offset="95%" stopColor="#f59e0b" stopOpacity={0.0} />
+                  <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.4} />
+                  <stop offset="95%" stopColor="var(--primary)" stopOpacity={0.0} />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.2} />
-              <XAxis dataKey="month" stroke="#888" fontSize={11} tickLine={false} />
+              <XAxis dataKey="month" stroke="var(--muted-foreground)" fontSize={11} tickLine={false} />
               <YAxis
-                stroke="#888"
+                stroke="var(--muted-foreground)"
                 fontSize={11}
                 tickLine={false}
                 tickFormatter={(v) => `₹${v / 100000}L`}
               />
               <Tooltip
                 formatter={(val) => [`₹${val.toLocaleString()}`, "Total GMV"]}
-                contentStyle={{ borderRadius: "12px", border: "none", fontSize: "12px" }}
+                contentStyle={{ borderRadius: "6px", border: "none", fontSize: "12px" }}
               />
               <Area
                 type="monotone"
                 dataKey="revenue"
-                stroke="#d97706"
+                stroke="var(--primary)"
                 strokeWidth={2.5}
                 fillOpacity={1}
                 fill="url(#adminGmv)"
@@ -257,7 +154,7 @@ export function AdminDashboard() {
       </div>
 
       {/* Pending Store Requests Preview */}
-      <div className="p-6 rounded-2xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-sm space-y-4">
+      <div className="dashboard-section space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="text-base font-bold text-gray-900 dark:text-white">
             Registered Merchant Stores

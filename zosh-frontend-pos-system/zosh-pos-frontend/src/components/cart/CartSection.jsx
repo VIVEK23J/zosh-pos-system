@@ -11,6 +11,7 @@ import {
   Sparkles,
 } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
 import { addToCart, clearCart } from "../../store/cartSlice";
 import { productService } from "../../services/productService";
 import { categoryService } from "../../services/categoryService";
@@ -117,7 +118,7 @@ function ProductCard({ product, onAdd }) {
   const displayPrice = Number(product.price != null ? product.price : product.sellingPrice || 0);
 
   return (
-    <div className="product-card" onClick={handleAdd}>
+    <div className="product-card">
       <div className="product-image" style={{ position: "relative", overflow: "hidden" }}>
         {product.image && !imageError ? (
           <img
@@ -134,22 +135,7 @@ function ProductCard({ product, onAdd }) {
         ) : (
           <span style={{ fontSize: "36px" }}>{product.fallbackIcon || "📦"}</span>
         )}
-        <span
-          style={{
-            position: "absolute",
-            top: "8px",
-            right: "8px",
-            background: "rgba(255, 255, 255, 0.9)",
-            color: "#174b35",
-            fontSize: "10px",
-            fontWeight: "700",
-            padding: "2px 6px",
-            borderRadius: "4px",
-            boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-          }}
-        >
-          {product.sku || `SKU-${product.id}`}
-        </span>
+        <span className="product-sku">{product.sku || `SKU-${product.id}`}</span>
       </div>
 
       <span className="product-category">{displayCategory}</span>
@@ -158,20 +144,17 @@ function ProductCard({ product, onAdd }) {
       <div className="product-bottom">
         <strong>₹{displayPrice.toFixed(2)}</strong>
 
-        <button
+        <Button variant="ghost"
           type="button"
           onClick={(e) => {
             e.stopPropagation();
             handleAdd();
           }}
-          style={{
-            backgroundColor: addedAnim ? "#16a34a" : undefined,
-            transition: "all 0.2s ease",
-          }}
+          className={addedAnim ? "product-add is-added" : "product-add"}
         >
           {addedAnim ? <Check size={16} /> : <Plus size={16} />}
           {addedAnim ? "Added" : "Add"}
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -270,25 +253,7 @@ function CartSection({ onNavigateToCustomers }) {
     <div className="pos-container">
       <header className="pos-header">
         <div>
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <h1>Zosh POS Terminal</h1>
-            <span
-              style={{
-                fontSize: "11px",
-                background: "#eaf3ed",
-                color: "#174b35",
-                fontWeight: "600",
-                padding: "3px 8px",
-                borderRadius: "12px",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "4px",
-              }}
-            >
-              <Sparkles size={11} /> Register Active
-            </span>
-          </div>
-          <p>Fast Point of Sale Billing & Order Management</p>
+          <p className="eyebrow">CASHIER / REGISTER</p><h1>Point of sale</h1>
         </div>
 
         <div className="header-cart">
@@ -306,14 +271,14 @@ function CartSection({ onNavigateToCustomers }) {
             <div>
               <h2>Product Catalog</h2>
               <p className="section-subtitle">
-                Select items or search by title or SKU to add to order
+                
               </p>
             </div>
-            <Package size={24} color="#174b35" />
+            <Package size={20} className="text-muted-foreground" />
           </div>
 
           <div className="search-box">
-            <Search size={18} color="#6b7280" />
+            <Search size={18} />
             <input
               type="text"
               placeholder="Search products by name, category or SKU..."
@@ -321,7 +286,7 @@ function CartSection({ onNavigateToCustomers }) {
               onChange={(e) => setSearch(e.target.value)}
             />
             {search && (
-              <button
+              <Button variant="ghost"
                 type="button"
                 onClick={() => setSearch("")}
                 style={{
@@ -334,20 +299,20 @@ function CartSection({ onNavigateToCustomers }) {
                 }}
               >
                 <X size={16} />
-              </button>
+              </Button>
             )}
           </div>
 
           <div className="category-list">
             {categoriesList.map((item) => (
-              <button
+              <Button variant="ghost"
                 key={item}
                 type="button"
                 className={category === item ? "category active" : "category"}
                 onClick={() => setCategory(item)}
               >
                 {item}
-              </button>
+              </Button>
             ))}
           </div>
 
@@ -395,7 +360,7 @@ function CartSection({ onNavigateToCustomers }) {
               </p>
             </div>
 
-            <button
+            <Button variant="ghost"
               type="button"
               className="clear-btn"
               onClick={() => dispatch(clearCart())}
@@ -403,7 +368,7 @@ function CartSection({ onNavigateToCustomers }) {
             >
               <Trash2 size={15} />
               Clear Cart
-            </button>
+            </Button>
           </div>
 
           <div className="cart-items">
@@ -413,9 +378,9 @@ function CartSection({ onNavigateToCustomers }) {
               ))
             ) : (
               <div className="empty-cart">
-                <ShoppingCart size={48} strokeWidth={1.5} color="#9ca3af" />
+                <ShoppingCart size={48} strokeWidth={1.5} className="text-muted-foreground" />
                 <h3>Your cart is empty</h3>
-                <p>Click on any product from the catalog to start billing</p>
+                <p></p>
               </div>
             )}
           </div>

@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "@/lib/rr-compat";
 import CustomerManagement from "../../components/customers/CustomerManagement";
 
 export function Customers() {

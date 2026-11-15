@@ -1,5 +1,6 @@
 import { Sun, Moon, Laptop } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
+import { Button } from "@/components/ui/button";
 
 /**
  * Reusable Theme Toggle Component
@@ -79,25 +80,23 @@ export function ThemeToggle({ variant = "button", className = "" }) {
 
   // Default header button variant
   return (
-    <button
+    <Button variant="ghost" size="icon"
       type="button"
       onClick={toggleTheme}
-      className={`group flex items-center gap-2 px-2.5 py-1.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 text-xs font-semibold text-gray-700 dark:text-gray-200 transition shadow-2xs ${className}`}
+      className={`text-muted-foreground ${className}`}
       title={`Switch to ${isDark ? "Light" : "Dark"} mode`}
       aria-label="Toggle theme"
     >
       {isDark ? (
         <>
-          <Sun className="size-4 text-amber-400 transition-transform group-hover:rotate-45" />
-          <span className="hidden md:inline text-[11px] font-medium">Light</span>
+          <Sun className="size-4" />
         </>
       ) : (
         <>
-          <Moon className="size-4 text-gray-600 dark:text-gray-300 transition-transform group-hover:-rotate-12" />
-          <span className="hidden md:inline text-[11px] font-medium">Dark</span>
+          <Moon className="size-4" />
         </>
       )}
-    </button>
+    </Button>
   );
 }
 
