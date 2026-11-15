@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSelector } from "react-redux";
 import {
   DollarSign,
   ShoppingCart,
@@ -27,20 +28,59 @@ import { orderService } from "../../services/orderService";
 import { inventoryService } from "../../services/inventoryService";
 
 export function BranchDashboard() {
+  const currentBranch = useSelector((state) => state.auth?.currentBranch);
+  const user = useSelector((state) => state.auth?.user);
+  const branchId = currentBranch?.id || user?.branchId || 1;
+
   const [weeklyData, setWeeklyData] = useState([]);
   const [recentOrders, setRecentOrders] = useState([]);
   const [lowStockItems, setLowStockItems] = useState([]);
   const [topProducts, setTopProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setWeeklyData(analyticsService.getWeeklyRevenue());
-    setTopProducts(analyticsService.getTopProducts());
+    let isMounted = true;
+    try {
+      const wData = analyticsService.getWeeklyRevenue?.() || [];
+      const tProducts = analyticsService.getTopProducts?.() || [];
+      if (isMounted) {
+        setWeeklyData(Array.isArray(wData) ? wData : []);
+        setTopProducts(Array.isArray(tProducts) ? tProducts : []);
+      }
+    } catch (err) {
+      console.error("Failed to load analytics mock data:", err);
+    }
 
-    orderService.getRecentOrders(1).then((orders) => setRecentOrders(orders));
-    inventoryService.getInventoryByBranch(1).then((items) => {
-      setLowStockItems(items.filter((i) => i.isLowStock));
-    });
-  }, []);
+    Promise.allSettled([
+      orderService.getRecentOrders(branchId, 5),
+      inventoryService.getInventoryByBranch(branchId),
+    ])
+      .then(([ordersResult, invResult]) => {
+        if (!isMounted) return;
+
+        if (ordersResult.status === "fulfilled" && Array.isArray(ordersResult.value)) {
+          setRecentOrders(ordersResult.value);
+        } else {
+          setRecentOrders([]);
+        }
+
+        if (invResult.status === "fulfilled" && Array.isArray(invResult.value)) {
+          setLowStockItems(invResult.value.filter((i) => i && i.isLowStock));
+        } else {
+          setLowStockItems([]);
+        }
+      })
+      .catch((err) => {
+        console.error("Failed to load branch dashboard data:", err);
+      })
+      .finally(() => {
+        if (isMounted) setLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [branchId]);
 
   return (
     <div className="space-y-6">
@@ -48,7 +88,7 @@ export function BranchDashboard() {
       <div className="p-6 rounded-2xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/80 px-2.5 py-0.5 rounded-full border border-blue-200 dark:border-blue-900">
-            Sector 29 Gurugram Branch
+            {currentBranch?.name || "Main Branch - Sector 29"}
           </span>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mt-1.5">
             Branch Performance & Store Operations
@@ -79,7 +119,7 @@ export function BranchDashboard() {
         />
         <StatCard
           title="Branch Orders"
-          value="428"
+          value={String(recentOrders?.length ? recentOrders.length * 10 : 428)}
           subtitle="Orders processed this week"
           icon={ShoppingCart}
           trend="+8.5%"
@@ -95,12 +135,12 @@ export function BranchDashboard() {
         />
         <StatCard
           title="Stock Warning"
-          value={`${lowStockItems.length} Items`}
+          value={`${lowStockItems?.length || 0} Items`}
           subtitle="Requires immediate replenishment"
           icon={AlertTriangle}
-          trend="Action Needed"
-          trendPositive={false}
-          color="amber"
+          trend={lowStockItems?.length > 0 ? "Action Needed" : "Optimal"}
+          trendPositive={lowStockItems?.length === 0}
+          color={lowStockItems?.length > 0 ? "amber" : "emerald"}
         />
       </div>
 
@@ -121,8 +161,8 @@ export function BranchDashboard() {
           </div>
 
           <div className="h-64 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={weeklyData}>
+            <ResponsiveContainer width="100%" height="100%" minHeight={220}>
+              <AreaChart data={weeklyData || []}>
                 <defs>
                   <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
@@ -135,10 +175,10 @@ export function BranchDashboard() {
                   stroke="#888"
                   fontSize={11}
                   tickLine={false}
-                  tickFormatter={(val) => `₹${val / 1000}k`}
+                  tickFormatter={(val) => `₹${Number(val || 0) / 1000}k`}
                 />
                 <Tooltip
-                  formatter={(val) => [`₹${val.toLocaleString()}`, "Revenue"]}
+                  formatter={(val) => [`₹${Number(val || 0).toLocaleString()}`, "Revenue"]}
                   contentStyle={{
                     borderRadius: "12px",
                     border: "none",
@@ -169,22 +209,30 @@ export function BranchDashboard() {
           </div>
 
           <div className="space-y-3">
-            {topProducts.slice(0, 4).map((p, idx) => (
-              <div
-                key={idx}
-                className="flex items-center justify-between p-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/60 transition text-xs"
-              >
-                <div>
-                  <h5 className="font-semibold text-gray-900 dark:text-white leading-tight">
-                    {p.name}
-                  </h5>
-                  <span className="text-[11px] text-gray-400">{p.category} • {p.sales} units</span>
+            {topProducts && topProducts.length > 0 ? (
+              topProducts.slice(0, 4).map((p, idx) => (
+                <div
+                  key={idx}
+                  className="flex items-center justify-between p-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/60 transition text-xs"
+                >
+                  <div>
+                    <h5 className="font-semibold text-gray-900 dark:text-white leading-tight">
+                      {p.name}
+                    </h5>
+                    <span className="text-[11px] text-gray-400">
+                      {p.category} • {p.sales || 0} units
+                    </span>
+                  </div>
+                  <strong className="text-emerald-700 dark:text-emerald-400 font-bold">
+                    ₹{(Number(p.revenue || 0) / 1000).toFixed(0)}k
+                  </strong>
                 </div>
-                <strong className="text-emerald-700 dark:text-emerald-400 font-bold">
-                  ₹{(p.revenue / 1000).toFixed(0)}k
-                </strong>
-              </div>
-            ))}
+              ))
+            ) : (
+              <p className="text-xs text-gray-400 py-4 text-center">
+                No product metrics recorded yet.
+              </p>
+            )}
           </div>
         </div>
       </div>
@@ -201,30 +249,42 @@ export function BranchDashboard() {
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="text-[10px] uppercase font-bold text-gray-400 border-b border-gray-100 dark:border-gray-800 pb-2">
-                <tr>
-                  <th className="py-2.5">Order</th>
-                  <th className="py-2.5">Customer</th>
-                  <th className="py-2.5">Tender</th>
-                  <th className="py-2.5">Amount</th>
-                  <th className="py-2.5">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                {recentOrders.slice(0, 4).map((o) => (
-                  <tr key={o.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30">
-                    <td className="py-3 font-bold text-gray-900 dark:text-white">#{o.id}</td>
-                    <td className="py-3 text-gray-600 dark:text-gray-300">{o.customerName || "Customer"}</td>
-                    <td className="py-3 font-semibold text-emerald-700 dark:text-emerald-400">{o.payment}</td>
-                    <td className="py-3 font-bold text-gray-900 dark:text-white">₹{o.totalAmount.toLocaleString()}</td>
-                    <td className="py-3">
-                      <Badge variant="success">Completed</Badge>
-                    </td>
+            {recentOrders && recentOrders.length > 0 ? (
+              <table className="w-full text-left text-xs">
+                <thead className="text-[10px] uppercase font-bold text-gray-400 border-b border-gray-100 dark:border-gray-800 pb-2">
+                  <tr>
+                    <th className="py-2.5">Order</th>
+                    <th className="py-2.5">Customer</th>
+                    <th className="py-2.5">Tender</th>
+                    <th className="py-2.5">Amount</th>
+                    <th className="py-2.5">Status</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                  {recentOrders.slice(0, 4).map((o) => (
+                    <tr key={o.id || o.orderId} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30">
+                      <td className="py-3 font-bold text-gray-900 dark:text-white">#{o.id || o.orderId}</td>
+                      <td className="py-3 text-gray-600 dark:text-gray-300">
+                        {o.customerName || "Customer"}
+                      </td>
+                      <td className="py-3 font-semibold text-emerald-700 dark:text-emerald-400">
+                        {o.payment || "CASH"}
+                      </td>
+                      <td className="py-3 font-bold text-gray-900 dark:text-white">
+                        ₹{Number(o.totalAmount || 0).toLocaleString()}
+                      </td>
+                      <td className="py-3">
+                        <Badge variant="success">Completed</Badge>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <p className="text-xs text-gray-400 py-6 text-center">
+                No orders processed yet for this branch.
+              </p>
+            )}
           </div>
         </div>
 
@@ -238,7 +298,7 @@ export function BranchDashboard() {
           </div>
 
           <div className="space-y-2.5">
-            {lowStockItems.length > 0 ? (
+            {lowStockItems && lowStockItems.length > 0 ? (
               lowStockItems.map((item) => (
                 <div
                   key={item.id}
@@ -246,17 +306,19 @@ export function BranchDashboard() {
                 >
                   <div>
                     <h5 className="font-bold text-amber-900 dark:text-amber-200">
-                      {item.product?.name}
+                      {item.product?.name || "Product"}
                     </h5>
                     <span className="text-[10px] text-amber-700 dark:text-amber-400">
-                      SKU: {item.product?.sku}
+                      SKU: {item.product?.sku || "N/A"}
                     </span>
                   </div>
                   <div className="text-right">
                     <span className="font-extrabold text-rose-600 text-sm block">
-                      {item.quantity} left
+                      {item.quantity ?? 0} left
                     </span>
-                    <span className="text-[10px] text-gray-400">Min: {item.lowStockThreshold}</span>
+                    <span className="text-[10px] text-gray-400">
+                      Min: {item.lowStockThreshold ?? 5}
+                    </span>
                   </div>
                 </div>
               ))

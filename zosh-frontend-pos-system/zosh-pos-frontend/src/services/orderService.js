@@ -68,6 +68,19 @@ export const orderService = {
     return normalizeOrder(res.data);
   },
 
+  getRecentOrders: async (branchId = 1, limit = 5) => {
+    try {
+      let orders = await orderService.getOrdersByBranch(branchId);
+      if (!Array.isArray(orders) || orders.length === 0) {
+        orders = await orderService.getAllOrders();
+      }
+      return Array.isArray(orders) ? orders.slice(0, limit) : [];
+    } catch (err) {
+      console.error("Failed to fetch recent orders:", err);
+      return [];
+    }
+  },
+
   getOrdersByBranch: async (branchId = 1, filters = {}) => {
     try {
       const params = new URLSearchParams(filters).toString();
