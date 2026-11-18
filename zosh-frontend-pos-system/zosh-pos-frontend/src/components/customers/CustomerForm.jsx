@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { X, Check } from "lucide-react";
+import { Check } from "lucide-react";
+import { Modal } from "../common/Modal";
 
-function CustomerForm({ customer, onSave, onClose }) {
+export function CustomerForm({ customer, onSave, onClose }) {
   const [formData, setFormData] = useState(() => ({
     name: customer?.name || "",
     email: customer?.email || "",
@@ -52,121 +53,123 @@ function CustomerForm({ customer, onSave, onClose }) {
   };
 
   return (
-    <div className="customer-modal-overlay">
-      <div className="customer-modal">
-        <div className="customer-modal-header">
-          <h2 style={{ fontSize: "18px", color: "#111827", margin: 0 }}>
-            {customer ? "Edit Customer Details" : "Add New Customer"}
-          </h2>
-
-          <button type="button" onClick={onClose} aria-label="Close dialog">
-            <X size={20} />
-          </button>
+    <Modal
+      isOpen={true}
+      onClose={onClose}
+      title={customer ? "Edit Customer Details" : "Add New Customer"}
+      subtitle="Register customer in store POS directory for order linking and history"
+    >
+      <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+        <div>
+          <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+            Customer Full Name *
+          </label>
+          <input
+            name="name"
+            value={formData.name}
+            onChange={handleChange}
+            placeholder="e.g. Rahul Sharma"
+            autoFocus
+            className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-xs text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
+          />
+          {errors.name && (
+            <span className="text-[11px] text-rose-600 mt-1 block">
+              {errors.name}
+            </span>
+          )}
         </div>
 
-        <form onSubmit={handleSubmit}>
-          <div>
-            <label>Customer Full Name *</label>
-            <input
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              placeholder="e.g. Rahul Sharma"
-              autoFocus
-            />
-            {errors.name && (
-              <span style={{ color: "#dc2626", fontSize: "11px", marginTop: "2px", display: "block" }}>
-                {errors.name}
-              </span>
-            )}
-          </div>
+        <div>
+          <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+            10-Digit Mobile Phone *
+          </label>
+          <input
+            name="phone"
+            type="tel"
+            value={formData.phone}
+            onChange={(e) =>
+              setFormData({
+                ...formData,
+                phone: e.target.value.replace(/\D/g, "").slice(0, 10),
+              })
+            }
+            maxLength={10}
+            placeholder="e.g. 9876543210"
+            className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-xs font-mono text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
+          />
+          {errors.phone && (
+            <span className="text-[11px] text-rose-600 mt-1 block">
+              {errors.phone}
+            </span>
+          )}
+        </div>
 
-          <div>
-            <label>10-Digit Mobile Phone *</label>
-            <input
-              name="phone"
-              type="tel"
-              value={formData.phone}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  phone: e.target.value.replace(/\D/g, "").slice(0, 10),
-                })
-              }
-              maxLength={10}
-              placeholder="e.g. 9876543210"
-            />
-            {errors.phone && (
-              <span style={{ color: "#dc2626", fontSize: "11px", marginTop: "2px", display: "block" }}>
-                {errors.phone}
-              </span>
-            )}
-          </div>
+        <div>
+          <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+            Email Address (optional)
+          </label>
+          <input
+            name="email"
+            type="email"
+            value={formData.email}
+            onChange={handleChange}
+            placeholder="e.g. customer@example.com"
+            className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-xs text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
+          />
+          {errors.email && (
+            <span className="text-[11px] text-rose-600 mt-1 block">
+              {errors.email}
+            </span>
+          )}
+        </div>
 
-          <div>
-            <label>Email Address</label>
-            <input
-              name="email"
-              type="email"
-              value={formData.email}
-              onChange={handleChange}
-              placeholder="e.g. customer@example.com"
-            />
-            {errors.email && (
-              <span style={{ color: "#dc2626", fontSize: "11px", marginTop: "2px", display: "block" }}>
-                {errors.email}
-              </span>
-            )}
-          </div>
+        <div>
+          <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+            Delivery / Billing Address
+          </label>
+          <textarea
+            name="address"
+            value={formData.address}
+            onChange={handleChange}
+            placeholder="e.g. Sector 29, Gurugram, Haryana"
+            rows={2}
+            className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-xs text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
+          />
+        </div>
 
-          <div>
-            <label>Delivery / Billing Address</label>
-            <textarea
-              name="address"
-              value={formData.address}
-              onChange={handleChange}
-              placeholder="e.g. Flat 302, Green Avenue, Delhi"
-              rows={3}
-            />
-          </div>
+        <div>
+          <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+            Account Status
+          </label>
+          <select
+            name="status"
+            value={formData.status}
+            onChange={handleChange}
+            className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-xs text-gray-900 dark:text-white outline-none"
+          >
+            <option value="Active">Active Account</option>
+            <option value="Inactive">Inactive / Suspended</option>
+          </select>
+        </div>
 
-          <div>
-            <label>Customer Status</label>
-            <select
-              name="status"
-              value={formData.status}
-              onChange={handleChange}
-              style={{
-                width: "100%",
-                padding: "10px",
-                border: "1px solid #ddd",
-                borderRadius: "7px",
-                outlineColor: "#174b35",
-                background: "white",
-              }}
-            >
-              <option value="Active">Active</option>
-              <option value="Inactive">Inactive</option>
-            </select>
-          </div>
-
-          <div className="customer-form-actions">
-            <button
-              type="button"
-              onClick={onClose}
-              style={{ background: "#f3f4f6", color: "#374151" }}
-            >
-              Cancel
-            </button>
-
-            <button type="submit" style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-              <Check size={16} />
-              {customer ? "Update Customer" : "Save Customer"}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        <div className="flex justify-end gap-3 pt-3 border-t border-gray-100 dark:border-gray-800">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 transition"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white text-xs font-semibold shadow-sm transition"
+          >
+            <Check className="size-4" />
+            <span>{customer ? "Update Profile" : "Save Customer"}</span>
+          </button>
+        </div>
+      </form>
+    </Modal>
   );
 }
 

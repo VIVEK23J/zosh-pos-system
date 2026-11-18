@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "@/lib/rr-compat";
 import {
   ShoppingCart,
   Plus,
@@ -8,13 +9,14 @@ import {
   Package,
   X,
   Check,
-  Sparkles,
+  Users,
+  Clock,
 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
 import { addToCart, clearCart } from "../../store/cartSlice";
 import { productService } from "../../services/productService";
 import { categoryService } from "../../services/categoryService";
+import { Badge } from "../common/Badge";
 import CartItem from "./CartItem";
 import CartSummary from "./CartSummary";
 import CustomerSelector from "./CustomerSelector";
@@ -96,14 +98,6 @@ const defaultProducts = [
   },
 ];
 
-const categories = [
-  "All",
-  "Audio",
-  "Electronics",
-  "Peripherals",
-  "Accessories",
-];
-
 function ProductCard({ product, onAdd }) {
   const [imageError, setImageError] = useState(false);
   const [addedAnim, setAddedAnim] = useState(false);
@@ -118,55 +112,83 @@ function ProductCard({ product, onAdd }) {
   const displayPrice = Number(product.price != null ? product.price : product.sellingPrice || 0);
 
   return (
-    <div className="product-card">
-      <div className="product-image" style={{ position: "relative", overflow: "hidden" }}>
-        {product.image && !imageError ? (
-          <img
-            src={product.image}
-            alt={product.name}
-            onError={() => setImageError(true)}
-            style={{
-              width: "100%",
-              height: "100%",
-              objectFit: "cover",
-              borderRadius: "8px",
-            }}
-          />
-        ) : (
-          <span style={{ fontSize: "36px" }}>{product.fallbackIcon || "📦"}</span>
-        )}
-        <span className="product-sku">{product.sku || `SKU-${product.id}`}</span>
+    <div className="p-4 rounded-2xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-sm hover:border-emerald-300 dark:hover:border-emerald-700 hover:shadow-md transition-all duration-200 flex flex-col justify-between group">
+      <div>
+        {/* Product Image / Icon Area */}
+        <div className="aspect-4/3 rounded-xl bg-gray-50 dark:bg-gray-800/60 border border-gray-100 dark:border-gray-800 flex items-center justify-center relative overflow-hidden mb-3">
+          {product.image && !imageError ? (
+            <img
+              src={product.image}
+              alt={product.name}
+              onError={() => setImageError(true)}
+              className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+            />
+          ) : (
+            <span className="text-3xl">{product.fallbackIcon || "📦"}</span>
+          )}
+
+          {/* SKU Pill */}
+          <span className="absolute top-2 right-2 px-2 py-0.5 rounded-md bg-white/90 dark:bg-gray-900/90 text-[10px] font-mono font-semibold text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 shadow-2xs">
+            {product.sku || `SKU-${product.id}`}
+          </span>
+        </div>
+
+        {/* Category & Title */}
+        <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 block mb-1">
+          {displayCategory}
+        </span>
+        <h4
+          title={product.name}
+          className="text-xs font-bold text-gray-900 dark:text-white line-clamp-2 min-h-[32px] mb-2 leading-snug"
+        >
+          {product.name}
+        </h4>
       </div>
 
-      <span className="product-category">{displayCategory}</span>
-      <h3 title={product.name}>{product.name}</h3>
+      {/* Bottom Price & Add Action */}
+      <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-gray-800">
+        <strong className="text-sm font-bold font-mono text-emerald-800 dark:text-emerald-400">
+          ₹{displayPrice.toFixed(2)}
+        </strong>
 
-      <div className="product-bottom">
-        <strong>₹{displayPrice.toFixed(2)}</strong>
-
-        <Button variant="ghost"
+        <button
           type="button"
           onClick={(e) => {
             e.stopPropagation();
             handleAdd();
           }}
-          className={addedAnim ? "product-add is-added" : "product-add"}
+          className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-xl font-semibold text-xs transition ${
+            addedAnim
+              ? "bg-emerald-900 text-white shadow-2xs scale-95"
+              : "bg-emerald-800 hover:bg-emerald-900 text-white shadow-xs"
+          }`}
         >
-          {addedAnim ? <Check size={16} /> : <Plus size={16} />}
-          {addedAnim ? "Added" : "Add"}
-        </Button>
+          {addedAnim ? (
+            <>
+              <Check className="size-3.5 stroke-[3]" />
+              <span>Added</span>
+            </>
+          ) : (
+            <>
+              <Plus className="size-3.5" />
+              <span>Add</span>
+            </>
+          )}
+        </button>
       </div>
     </div>
   );
 }
 
-function CartSection({ onNavigateToCustomers }) {
+export function CartSection({ onNavigateToCustomers }) {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   const cart = useSelector((state) => state.cart);
   const { cartItems, quantity } = cart;
   const user = useSelector((state) => state.auth.user);
   const currentStore = useSelector((state) => state.auth.currentStore);
+  const currentBranch = useSelector((state) => state.auth.currentBranch);
   const storeId = user?.storeId || currentStore?.id || 1;
 
   const [productsList, setProductsList] = useState(defaultProducts);
@@ -177,7 +199,6 @@ function CartSection({ onNavigateToCustomers }) {
     "Peripherals",
     "Accessories",
   ]);
-  const [catalogLoading, setCatalogLoading] = useState(true);
 
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
@@ -186,7 +207,6 @@ function CartSection({ onNavigateToCustomers }) {
 
   useEffect(() => {
     const loadCatalog = async () => {
-      setCatalogLoading(true);
       try {
         const [prods, cats] = await Promise.all([
           productService.getProductsByStore(storeId),
@@ -204,8 +224,6 @@ function CartSection({ onNavigateToCustomers }) {
         }
       } catch (e) {
         console.warn("Backend catalog fallback to defaults", e);
-      } finally {
-        setCatalogLoading(false);
       }
     };
     loadCatalog();
@@ -250,73 +268,116 @@ function CartSection({ onNavigateToCustomers }) {
   }
 
   return (
-    <div className="pos-container">
-      <header className="pos-header">
+    <div className="space-y-6">
+      {/* Header and Action controls - Matches Shift Reports Design System */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-2xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-sm">
         <div>
-          <p className="eyebrow">CASHIER / REGISTER</p><h1>Point of sale</h1>
+          <div className="flex items-center gap-2.5 mb-1">
+            <h1 className="text-xl font-bold text-gray-900 dark:text-white">
+              Point of Sale (POS) Terminal
+            </h1>
+            <Badge variant="success">Register Online</Badge>
+          </div>
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            Cashier: <strong>{user?.fullName || "Vivek Sharma"}</strong> • Store:{" "}
+            {currentStore?.brand || "Flagship Store"} ({currentBranch?.name || "Main Branch"})
+          </p>
         </div>
 
-        <div className="header-cart">
-          <ShoppingCart size={19} />
-          <span>
-            {quantity} {quantity === 1 ? "Item" : "Items"} in Cart
-          </span>
-        </div>
-      </header>
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={onNavigateToCustomers}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white font-semibold text-xs shadow-sm transition"
+            title="Open Customer Directory"
+          >
+            <Users className="size-4" />
+            <span>Customer Directory</span>
+          </button>
 
-      <main className="pos-layout">
-        {/* Products Section */}
-        <section className="products-section">
-          <div className="section-heading">
-            <div>
-              <h2>Product Catalog</h2>
-              <p className="section-subtitle">
-                
-              </p>
+          <button
+            type="button"
+            onClick={() => navigate("/cashier/shifts")}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white font-semibold text-xs shadow-sm transition"
+          >
+            <Clock className="size-4" />
+            <span>Shift Reports</span>
+          </button>
+
+          {/* Cart Items Counter Indicator */}
+          <div className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-xs font-semibold text-gray-700 dark:text-gray-200">
+            <ShoppingCart className="size-4 text-emerald-600" />
+            <span>
+              {quantity} {quantity === 1 ? "Item" : "Items"} in Cart
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Two-Column POS Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* Left Column: Product Catalog & Category Selection */}
+        <div className="lg:col-span-7 xl:col-span-8 p-6 rounded-2xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-sm space-y-5">
+          {/* Section Heading & Search */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-base font-bold text-gray-900 dark:text-white">
+                  Product Catalog
+                </h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Select items or scan barcode to add to current order
+                </p>
+              </div>
+
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-[11px] font-semibold text-gray-500">
+                <Package className="size-3.5 text-emerald-600" />
+                <span>{filteredProducts.length} Products</span>
+              </div>
             </div>
-            <Package size={20} className="text-muted-foreground" />
+
+            {/* Search Input Box */}
+            <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 text-xs">
+              <Search className="size-4 text-gray-400 shrink-0" />
+              <input
+                type="text"
+                placeholder="Search products by name, category, or SKU..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full bg-transparent outline-none text-xs text-gray-900 dark:text-white placeholder:text-gray-400"
+              />
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => setSearch("")}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="size-3.5" />
+                </button>
+              )}
+            </div>
+
+            {/* Category Filter Pills */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+              {categoriesList.map((item) => (
+                <button
+                  key={item}
+                  type="button"
+                  onClick={() => setCategory(item)}
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition shrink-0 ${
+                    category === item
+                      ? "bg-emerald-800 text-white shadow-xs"
+                      : "border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                  }`}
+                >
+                  {item}
+                </button>
+              ))}
+            </div>
           </div>
 
-          <div className="search-box">
-            <Search size={18} />
-            <input
-              type="text"
-              placeholder="Search products by name, category or SKU..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-            {search && (
-              <Button variant="ghost"
-                type="button"
-                onClick={() => setSearch("")}
-                style={{
-                  background: "transparent",
-                  border: "none",
-                  cursor: "pointer",
-                  color: "#9ca3af",
-                  display: "grid",
-                  placeItems: "center",
-                }}
-              >
-                <X size={16} />
-              </Button>
-            )}
-          </div>
-
-          <div className="category-list">
-            {categoriesList.map((item) => (
-              <Button variant="ghost"
-                key={item}
-                type="button"
-                className={category === item ? "category active" : "category"}
-                onClick={() => setCategory(item)}
-              >
-                {item}
-              </Button>
-            ))}
-          </div>
-
-          <div className="products-grid">
+          {/* Products Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
             {filteredProducts.map((product) => (
               <ProductCard
                 key={product.id}
@@ -326,70 +387,63 @@ function CartSection({ onNavigateToCustomers }) {
             ))}
 
             {filteredProducts.length === 0 && (
-              <div
-                style={{
-                  gridColumn: "1 / -1",
-                  textAlign: "center",
-                  padding: "45px 20px",
-                  color: "#6b7280",
-                }}
-              >
-                <Package size={40} style={{ margin: "0 auto 12px", opacity: 0.5 }} />
-                <h4 style={{ color: "#374151", marginBottom: "4px" }}>
+              <div className="col-span-full py-12 text-center text-xs text-gray-400 space-y-2">
+                <Package className="size-10 mx-auto text-gray-300 dark:text-gray-600" />
+                <h4 className="font-semibold text-gray-700 dark:text-gray-200 text-sm">
                   No matching products
                 </h4>
-                <p style={{ fontSize: "13px" }}>
-                  Try searching for another keyword or switch category.
-                </p>
+                <p>Try searching for a different keyword or change categories.</p>
               </div>
             )}
           </div>
-        </section>
+        </div>
 
-        {/* Cart & Customer Section */}
-        <section className="cart-section">
-          <CustomerSelector
-            onNavigateToCustomers={onNavigateToCustomers}
-          />
+        {/* Right Column: Customer Info, Cart & Checkout */}
+        <div className="lg:col-span-5 xl:col-span-4 p-6 rounded-2xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-sm space-y-5 sticky top-4">
+          {/* Customer Selector Section */}
+          <CustomerSelector onNavigateToCustomers={onNavigateToCustomers} />
 
-          <div className="cart-heading">
+          {/* Cart Items Heading & Clear Action */}
+          <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-gray-800">
             <div>
-              <h2>Current Cart</h2>
-              <p>
-                {quantity} {quantity === 1 ? "unit" : "units"} ({cartItems.length} unique products)
+              <h3 className="text-sm font-bold text-gray-900 dark:text-white">
+                Current Cart
+              </h3>
+              <p className="text-[11px] text-gray-400">
+                {quantity} {quantity === 1 ? "unit" : "units"} ({cartItems.length} unique items)
               </p>
             </div>
 
-            <Button variant="ghost"
+            <button
               type="button"
-              className="clear-btn"
               onClick={() => dispatch(clearCart())}
               disabled={cartItems.length === 0}
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              <Trash2 size={15} />
-              Clear Cart
-            </Button>
+              <Trash2 className="size-3.5" />
+              <span>Clear Cart</span>
+            </button>
           </div>
 
-          <div className="cart-items">
+          {/* Cart Items List */}
+          <div className="max-h-[300px] overflow-y-auto space-y-1 pr-1 divide-y divide-gray-100 dark:divide-gray-800">
             {cartItems.length > 0 ? (
-              cartItems.map((item) => (
-                <CartItem key={item.id} item={item} />
-              ))
+              cartItems.map((item) => <CartItem key={item.id} item={item} />)
             ) : (
-              <div className="empty-cart">
-                <ShoppingCart size={48} strokeWidth={1.5} className="text-muted-foreground" />
-                <h3>Your cart is empty</h3>
-                <p></p>
+              <div className="py-10 text-center text-xs text-gray-400 space-y-2">
+                <ShoppingCart className="size-10 mx-auto text-gray-300 dark:text-gray-600" strokeWidth={1.5} />
+                <h4 className="font-semibold text-gray-700 dark:text-gray-200">
+                  Your register cart is empty
+                </h4>
+                <p>Select products from the catalog to build an order.</p>
               </div>
             )}
           </div>
 
-          <CartSummary
-            onProceedToPayment={() => setShowPayment(true)}
-          />
-        </section>
-      </main>
+          {/* Order Summary & Checkout Trigger */}
+          <CartSummary onProceedToPayment={() => setShowPayment(true)} />
+        </div>
+      </div>
     </div>
   );
 }

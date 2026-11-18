@@ -14,13 +14,13 @@ import {
   Globe,
   RefreshCw,
   XCircle,
-  Clock,
   Info,
 } from "lucide-react";
 import { recordCustomerOrder } from "../../store/customerSlice";
 import { orderService } from "../../services/orderService";
 import { paymentService, loadRazorpayScript } from "../../services/paymentService";
 import { RazorpayQrTimer } from "./RazorpayQrTimer";
+import { Badge } from "../common/Badge";
 
 export function PaymentSection({ onBack, onComplete }) {
   const dispatch = useDispatch();
@@ -40,16 +40,16 @@ export function PaymentSection({ onBack, onComplete }) {
   // 'cash' | 'card' | 'upi' | 'razorpay' | 'razorpay_qr' | 'stripe'
   const [paymentMethod, setPaymentMethod] = useState("cash");
 
-  // Real Cash state
+  // Cash state
   const [amountReceived, setAmountReceived] = useState("");
 
-  // Real Card state (from terminal slip)
+  // Card state (terminal slip)
   const [cardAuthCode, setCardAuthCode] = useState("");
   const [cardLast4, setCardLast4] = useState("");
   const [cardNetwork, setCardNetwork] = useState("VISA");
   const [cardType, setCardType] = useState("DEBIT");
 
-  // Real UPI state (from customer's UPI app confirmation)
+  // UPI state
   const [transactionId, setTransactionId] = useState("");
 
   const [isProcessing, setIsProcessing] = useState(false);
@@ -58,6 +58,12 @@ export function PaymentSection({ onBack, onComplete }) {
   // Razorpay Gateway Config
   const [rzpConfig, setRzpConfig] = useState(null);
   const [showConfigNotice, setShowConfigNotice] = useState(false);
+
+  // Stable pos reference across renders
+  const [posReceiptRef, setPosReceiptRef] = useState("");
+  useEffect(() => {
+    setPosReceiptRef(`RCPT-${Date.now()}`);
+  }, []);
 
   useEffect(() => {
     paymentService.getRazorpayConfig().then((cfg) => {
@@ -138,7 +144,7 @@ export function PaymentSection({ onBack, onComplete }) {
     };
   };
 
-  // Process and persist payment (Cash, Card, UPI, Stripe)
+  // Process payment
   const handlePayment = async () => {
     if (isRazorpay) {
       await handleRazorpayCheckout();
@@ -150,13 +156,14 @@ export function PaymentSection({ onBack, onComplete }) {
     setFailureError(null);
 
     try {
+      const nowTs = new Date().getTime();
       let generatedPaymentRef = "CASH-PAID";
       if (isUpi) {
         generatedPaymentRef = transactionId.trim();
       } else if (isCard) {
         generatedPaymentRef = `${cardNetwork}-${cardType}-AUTH-${cardAuthCode.trim()}${cardLast4 ? ` (x${cardLast4.trim()})` : ""}`;
       } else if (isStripe) {
-        generatedPaymentRef = `pi_str_${Date.now()}`;
+        generatedPaymentRef = `pi_str_${nowTs}`;
       }
 
       const paymentTypeEnum =
@@ -214,9 +221,10 @@ export function PaymentSection({ onBack, onComplete }) {
     setFailureError(null);
 
     try {
+      const receiptTs = Date.now();
       const orderData = await paymentService.createRazorpayOrder({
         amount: total,
-        receipt: `rcpt_${Date.now()}`,
+        receipt: `rcpt_${receiptTs}`,
         customer: selectedCustomer,
       });
 
@@ -239,7 +247,7 @@ export function PaymentSection({ onBack, onComplete }) {
         amount: orderData.amountInPaise,
         currency: orderData.currency || "INR",
         name: rzpConfig?.companyName || "ZOSH POS Retail",
-        description: `POS Checkout #${Date.now().toString().slice(-6)}`,
+        description: `POS Checkout #${receiptTs.toString().slice(-6)}`,
         order_id:
           orderData.razorpayOrderId &&
           orderData.razorpayOrderId.startsWith("order_") &&
@@ -338,8 +346,7 @@ export function PaymentSection({ onBack, onComplete }) {
     }
   };
 
-  // Callback from Dynamic QR Timer component
-  const handleQrPaymentSuccess = ({ paymentRef, qrId, order }) => {
+  const handleQrPaymentSuccess = ({ paymentRef, order }) => {
     if (selectedCustomer?.id) {
       dispatch(
         recordCustomerOrder({
@@ -374,29 +381,37 @@ export function PaymentSection({ onBack, onComplete }) {
   const isTestMode = rzpConfig ? rzpConfig.testMode : true;
 
   return (
-    <div className="payment-page">
-      <div className="payment-header">
-        <button
-          type="button"
-          className="back-btn"
-          onClick={onBack}
-        >
-          <ArrowLeft size={18} />
-          Back to Cart & Editing
-        </button>
-
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: "12px", marginTop: "14px" }}>
-          <div>
-            <h2>Payment Checkout</h2>
-            <p>Select customer payment tender, enter transaction details and process order</p>
+    <div className="space-y-6">
+      {/* Header and Action controls - Matches Shift Reports Design System */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-2xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-sm">
+        <div>
+          <div className="flex items-center gap-2.5 mb-1">
+            <h1 className="text-xl font-bold text-gray-900 dark:text-white">
+              Tender Checkout & Settlement
+            </h1>
+            <Badge variant="success">Active Terminal</Badge>
           </div>
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            Select payment tender, capture authorization receipt, and finalize register transaction
+          </p>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={onBack}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white font-semibold text-xs shadow-sm transition"
+          >
+            <ArrowLeft className="size-4" />
+            <span>Back to Cart & Products</span>
+          </button>
         </div>
       </div>
 
       {/* Gateway Status Badge */}
-      <div className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-xl bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800 text-sky-900 dark:text-sky-300 text-xs mb-4">
+      <div className="flex flex-wrap items-center justify-between gap-2 p-3.5 rounded-xl bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800 text-sky-900 dark:text-sky-300 text-xs">
         <div className="flex items-center gap-2">
-          <ShieldCheck size={18} className="text-sky-600 dark:text-sky-400 shrink-0" />
+          <ShieldCheck className="size-4.5 text-sky-600 dark:text-sky-400 shrink-0" />
           <span>
             <strong>Razorpay Gateway:</strong>{" "}
             <span
@@ -418,33 +433,28 @@ export function PaymentSection({ onBack, onComplete }) {
         <button
           type="button"
           onClick={() => setShowConfigNotice((prev) => !prev)}
-          className="inline-flex items-center gap-1 text-[11px] font-semibold text-sky-700 dark:text-sky-300 underline"
+          className="inline-flex items-center gap-1 text-[11px] font-semibold text-sky-700 dark:text-sky-300 hover:underline"
         >
-          <Info size={13} />
-          {showConfigNotice ? "Hide Info" : "Switching to Live Keys Info"}
+          <Info className="size-3.5" />
+          <span>{showConfigNotice ? "Hide Info" : "Production Keys Info"}</span>
         </button>
       </div>
 
       {showConfigNotice && (
-        <div className="mb-4 p-3.5 rounded-xl bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 text-xs text-blue-900 dark:text-blue-200">
-          <strong className="block font-bold mb-1">Production Keys Setup:</strong>
-          <p className="mb-1.5">
-            Set your production keys in <code>zosh-pos-system/.env</code>:
-          </p>
-          <code className="block bg-white dark:bg-gray-900 p-2 rounded border border-blue-200 dark:border-blue-700 font-mono text-[11px] mb-1.5">
+        <div className="p-4 rounded-xl bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 text-xs text-blue-900 dark:text-blue-200 space-y-1.5">
+          <strong className="block font-bold">Production Keys Setup:</strong>
+          <p>Configure live API credentials in <code>zosh-pos-system/.env</code>:</p>
+          <code className="block bg-white dark:bg-gray-900 p-2 rounded-xl border border-blue-200 dark:border-blue-700 font-mono text-[11px]">
             RAZORPAY_KEY_ID=rzp_live_your_actual_key_id<br />
             RAZORPAY_KEY_SECRET=your_actual_secret
           </code>
-          <p className="text-[11px] text-gray-500">
-            Restart the backend to automatically switch to live production payments.
-          </p>
         </div>
       )}
 
       {failureError && (
-        <div className="mb-4 p-4 rounded-xl bg-red-50 dark:bg-red-950/60 border border-red-200 dark:border-red-900 text-red-800 dark:text-red-200 text-xs flex items-center justify-between">
+        <div className="p-4 rounded-xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900 text-rose-800 dark:text-rose-200 text-xs flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <XCircle className="size-5 text-red-600 shrink-0" />
+            <XCircle className="size-4.5 text-rose-600 shrink-0" />
             <span>{failureError}</span>
           </div>
           <button
@@ -457,115 +467,79 @@ export function PaymentSection({ onBack, onComplete }) {
         </div>
       )}
 
-      <div className="payment-layout">
-        {/* Payment Methods & Input Section */}
-        <section className="payment-method-section">
-          <h3 className="text-base font-bold text-gray-900 dark:text-white mb-3.5">
-            Select Payment Method
-          </h3>
-
-          <div
-            className="payment-methods"
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))",
-              gap: "10px",
-            }}
-          >
-            {/* 1. Cash */}
-            <button
-              type="button"
-              className={`payment-method ${paymentMethod === "cash" ? "selected" : ""}`}
-              onClick={() => setPaymentMethod("cash")}
-            >
-              <Banknote size={24} />
-              <strong>Cash</strong>
-              <span>Cash tender</span>
-            </button>
-
-            {/* 2. Card */}
-            <button
-              type="button"
-              className={`payment-method ${paymentMethod === "card" ? "selected" : ""}`}
-              onClick={() => setPaymentMethod("card")}
-            >
-              <CreditCard size={24} />
-              <strong>Card</strong>
-              <span>EDC Terminal Slip</span>
-            </button>
-
-            {/* 3. Razorpay Standard Checkout */}
-            <button
-              type="button"
-              className={`payment-method ${paymentMethod === "razorpay" ? "selected" : ""}`}
-              onClick={() => setPaymentMethod("razorpay")}
-            >
-              <Zap size={24} color="#0284c7" />
-              <strong>Razorpay</strong>
-              <span>Cards, NetBanking, UPI</span>
-            </button>
-
-            {/* 4. Razorpay Dynamic QR with Timer */}
-            <button
-              type="button"
-              className={`payment-method ${paymentMethod === "razorpay_qr" ? "selected" : ""}`}
-              onClick={() => setPaymentMethod("razorpay_qr")}
-            >
-              <div className="relative">
-                <QrCode size={24} color="#059669" />
-                <Clock size={12} className="absolute -bottom-1 -right-1 text-emerald-600" />
-              </div>
-              <strong>QR Timer</strong>
-              <span>Dynamic UPI QR</span>
-            </button>
-
-            {/* 5. UPI (Manual Reference) */}
-            <button
-              type="button"
-              className={`payment-method ${paymentMethod === "upi" ? "selected" : ""}`}
-              onClick={() => setPaymentMethod("upi")}
-            >
-              <Smartphone size={24} />
-              <strong>UPI (UTR)</strong>
-              <span>12-Digit Reference</span>
-            </button>
-
-            {/* 6. Stripe */}
-            <button
-              type="button"
-              className={`payment-method ${paymentMethod === "stripe" ? "selected" : ""}`}
-              onClick={() => setPaymentMethod("stripe")}
-            >
-              <Globe size={24} color="#6366f1" />
-              <strong>Stripe</strong>
-              <span>International Cards</span>
-            </button>
+      {/* Main Two-Column Tender Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* Left Column: Payment Tenders & Capture Inputs */}
+        <div className="lg:col-span-7 xl:col-span-8 p-6 rounded-2xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-sm space-y-5">
+          <div>
+            <h3 className="text-base font-bold text-gray-900 dark:text-white">
+              Select Payment Tender
+            </h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              Choose the customer's tender method to capture transaction details
+            </p>
           </div>
 
-          {/* Cash Payment Details */}
+          {/* Tender Tabs Grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {[
+              { id: "cash", label: "Cash", sub: "Physical Currency", icon: Banknote },
+              { id: "card", label: "Card", sub: "Terminal Slip Auth", icon: CreditCard },
+              { id: "razorpay", label: "Razorpay", sub: "All Online Rails", icon: Zap, iconColor: "text-blue-600" },
+              { id: "razorpay_qr", label: "QR Timer", sub: "Dynamic UPI QR", icon: QrCode, iconColor: "text-emerald-600" },
+              { id: "upi", label: "UPI (UTR)", sub: "12-Digit Reference", icon: Smartphone },
+              { id: "stripe", label: "Stripe", sub: "Global Cards", icon: Globe, iconColor: "text-emerald-700" },
+            ].map((tender) => {
+              const Icon = tender.icon;
+              const isSelected = paymentMethod === tender.id;
+              return (
+                <button
+                  key={tender.id}
+                  type="button"
+                  onClick={() => setPaymentMethod(tender.id)}
+                  className={`p-3.5 rounded-xl border flex flex-col items-center gap-1.5 transition text-center ${
+                    isSelected
+                      ? "border-emerald-600 bg-emerald-50/70 dark:bg-emerald-950/50 text-emerald-900 dark:text-emerald-200 ring-2 ring-emerald-500/20 shadow-xs"
+                      : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/40 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
+                  }`}
+                >
+                  <Icon className={`size-5 ${tender.iconColor || (isSelected ? "text-emerald-700 dark:text-emerald-400" : "text-gray-500")}`} />
+                  <strong className="text-xs font-bold block">{tender.label}</strong>
+                  <span className="text-[10px] text-gray-400 block">{tender.sub}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* 1. Cash Tender Details */}
           {isCash && (
-            <div className="payment-input-section">
-              <label>Amount Received from Customer (₹) *</label>
+            <div className="space-y-4 pt-2">
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                  Amount Received from Customer (₹) *
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={amountReceived}
+                  onChange={(e) => setAmountReceived(e.target.value)}
+                  placeholder="Enter tendered amount..."
+                  autoFocus
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm font-mono text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                />
+              </div>
 
-              <input
-                type="number"
-                min="0"
-                step="1"
-                value={amountReceived}
-                onChange={(e) => setAmountReceived(e.target.value)}
-                placeholder="Enter tendered amount..."
-                autoFocus
-              />
-
-              <div className="quick-amounts">
+              {/* Fast denomination buttons */}
+              <div className="flex flex-wrap items-center gap-2">
                 <button
                   type="button"
-                  style={{
-                    background: numReceived === total ? "#174b35" : undefined,
-                    color: numReceived === total ? "#fff" : undefined,
-                    fontWeight: "600",
-                  }}
                   onClick={() => setAmountReceived(total.toFixed(0))}
+                  className={`px-3 py-1.5 rounded-xl border text-xs font-semibold transition ${
+                    numReceived === total
+                      ? "bg-emerald-800 text-white border-emerald-800"
+                      : "border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100"
+                  }`}
                 >
                   Exact (₹{total.toFixed(2)})
                 </button>
@@ -575,70 +549,77 @@ export function PaymentSection({ onBack, onComplete }) {
                     key={amt}
                     type="button"
                     onClick={() => setAmountReceived(String(amt))}
+                    className="px-3 py-1.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-100 transition"
                   >
                     ₹{amt}
                   </button>
                 ))}
               </div>
 
-              {/* Cash Change Display */}
+              {/* Change calculation card */}
               <div
-                className="change-display"
-                style={{
-                  backgroundColor: numReceived >= total && amountReceived !== "" ? "#eff7f1" : "#fef2f2",
-                  border: `1px solid ${numReceived >= total && amountReceived !== "" ? "#bbf7d0" : "#fecaca"}`,
-                }}
+                className={`p-4 rounded-xl border flex items-center justify-between text-xs ${
+                  numReceived >= total && amountReceived !== ""
+                    ? "bg-emerald-50/70 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200"
+                    : "bg-rose-50/70 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800 text-rose-900 dark:text-rose-200"
+                }`}
               >
                 <div>
-                  <span style={{ fontSize: "12px", color: "#6b7280" }}>
+                  <span className="text-[11px] font-semibold block mb-0.5 opacity-80">
                     {numReceived >= total ? "Change to Return" : "Remaining Due Amount"}
                   </span>
-                  <div style={{ fontSize: "20px", fontWeight: "700", color: numReceived >= total ? "#174b35" : "#dc2626" }}>
+                  <div className="text-xl font-bold font-mono">
                     ₹{numReceived >= total ? change.toFixed(2) : remainingDue.toFixed(2)}
                   </div>
                 </div>
 
-                <div style={{ textAlign: "right" }}>
-                  <span style={{ fontSize: "12px", color: "#6b7280" }}>Tendered</span>
-                  <div style={{ fontSize: "15px", fontWeight: "600" }}>
+                <div className="text-right">
+                  <span className="text-[11px] font-semibold block mb-0.5 opacity-80">
+                    Tendered Amount
+                  </span>
+                  <div className="text-sm font-bold font-mono">
                     ₹{numReceived.toFixed(2)}
                   </div>
                 </div>
               </div>
 
               {amountReceived !== "" && numReceived < total && (
-                <p className="payment-error" style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                  <AlertTriangle size={15} />
-                  Insufficient amount. Received ₹{numReceived.toFixed(2)} of ₹{total.toFixed(2)} payable.
+                <p className="text-xs text-rose-600 flex items-center gap-1.5">
+                  <AlertTriangle className="size-4" />
+                  <span>
+                    Insufficient cash tendered. ₹{remainingDue.toFixed(2)} remaining.
+                  </span>
                 </p>
               )}
             </div>
           )}
 
-          {/* Real Card Payment */}
+          {/* 2. EDC Card Tender Details */}
           {isCard && (
-            <div className="payment-input-section space-y-3">
-              <div className="p-4 rounded-xl bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 flex items-center gap-4">
-                <div className="size-12 rounded-lg bg-sky-100 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 flex items-center justify-center shrink-0">
-                  <CreditCard size={28} />
+            <div className="space-y-4 pt-2">
+              <div className="p-4 rounded-xl bg-gray-50 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800 flex items-center gap-3.5 text-xs">
+                <div className="size-11 rounded-xl bg-sky-50 dark:bg-sky-950 text-sky-600 dark:text-sky-400 flex items-center justify-center shrink-0 border border-sky-100 dark:border-sky-800">
+                  <CreditCard className="size-5" />
                 </div>
                 <div>
-                  <strong className="text-sm font-semibold text-gray-900 dark:text-white block">
+                  <strong className="text-gray-900 dark:text-white block font-bold">
                     EDC Card Machine Checkout
                   </strong>
-                  <span className="text-xs text-gray-500 dark:text-gray-400">
-                    Swipe or insert card in your EDC terminal and enter the approval code from the printed receipt slip.
+                  <span className="text-gray-400 text-[11px]">
+                    Swipe / tap card on POS EDC machine and enter authorization approval code.
                   </span>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-3 text-xs">
                 <div>
-                  <label className="text-xs font-semibold block mb-1">Card Network</label>
+                  <label className="block font-semibold mb-1 text-gray-700 dark:text-gray-300">
+                    Card Network
+                  </label>
                   <select
                     value={cardNetwork}
                     onChange={(e) => setCardNetwork(e.target.value)}
-                    className="w-full p-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-xs"
+                    className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-xs outline-none"
                   >
                     <option value="VISA">Visa</option>
                     <option value="MASTERCARD">Mastercard</option>
@@ -648,11 +629,13 @@ export function PaymentSection({ onBack, onComplete }) {
                 </div>
 
                 <div>
-                  <label className="text-xs font-semibold block mb-1">Card Type</label>
+                  <label className="block font-semibold mb-1 text-gray-700 dark:text-gray-300">
+                    Card Type
+                  </label>
                   <select
                     value={cardType}
                     onChange={(e) => setCardType(e.target.value)}
-                    className="w-full p-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-xs"
+                    className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-xs outline-none"
                   >
                     <option value="DEBIT">Debit Card</option>
                     <option value="CREDIT">Credit Card</option>
@@ -660,108 +643,61 @@ export function PaymentSection({ onBack, onComplete }) {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-3 text-xs">
                 <div>
-                  <label className="text-xs font-semibold block mb-1">Last 4 Digits (Optional)</label>
+                  <label className="block font-semibold mb-1 text-gray-700 dark:text-gray-300">
+                    Last 4 Digits (Optional)
+                  </label>
                   <input
                     type="text"
                     maxLength={4}
                     value={cardLast4}
                     onChange={(e) => setCardLast4(e.target.value.replace(/\D/g, ""))}
                     placeholder="e.g. 4321"
-                    className="w-full p-2.5 rounded-lg border border-gray-300 dark:border-gray-700 text-xs"
+                    className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-xs outline-none font-mono"
                   />
                 </div>
 
                 <div>
-                  <label className="text-xs font-semibold block mb-1">Approval / Auth Code *</label>
+                  <label className="block font-semibold mb-1 text-gray-700 dark:text-gray-300">
+                    Approval / Auth Code *
+                  </label>
                   <input
                     type="text"
                     value={cardAuthCode}
                     onChange={(e) => setCardAuthCode(e.target.value)}
                     placeholder="e.g. APPR-192830"
-                    className="w-full p-2.5 rounded-lg border border-gray-300 dark:border-gray-700 text-xs"
+                    className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-xs outline-none font-mono"
                   />
                 </div>
               </div>
             </div>
           )}
 
-          {/* Real UPI Payment */}
-          {isUpi && (
-            <div className="payment-input-section space-y-3">
-              <div className="p-4 rounded-xl bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 flex items-center gap-4">
-                <div className="size-16 bg-white rounded-lg border border-gray-200 flex items-center justify-center shrink-0 p-1">
-                  <QrCode size={48} className="text-emerald-800" />
-                </div>
-
-                <div>
-                  <span className="text-xs text-gray-500 dark:text-gray-400 block">
-                    Customer scans your static store QR (GPay, PhonePe, Paytm, BHIM)
-                  </span>
-                  <span className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold block mt-0.5">
-                    Payable: ₹{total.toFixed(2)}
-                  </span>
-                </div>
-              </div>
-
-              <div>
-                <label className="text-xs font-semibold block mb-1">
-                  12-Digit UPI UTR / Transaction Reference *
-                </label>
-                <input
-                  type="text"
-                  value={transactionId}
-                  onChange={(e) => setTransactionId(e.target.value)}
-                  placeholder="Enter 12-digit UTR from customer's payment screen..."
-                  className="w-full p-3 rounded-lg border border-gray-300 dark:border-gray-700 text-xs"
-                  autoFocus
-                />
-                <span className="text-[11px] text-gray-500 block mt-1">
-                  Found on customer's payment successful receipt (e.g., 429182910291)
-                </span>
-              </div>
-            </div>
-          )}
-
-          {/* Razorpay Standard Checkout */}
+          {/* 3. Razorpay Standard Checkout */}
           {isRazorpay && (
-            <div className="payment-input-section">
-              <div className="p-4 rounded-xl border border-blue-200 bg-blue-50/60 dark:bg-blue-950/40 dark:border-blue-900 mb-4">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-3">
-                    <div className="size-10 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold">
+            <div className="space-y-4 pt-2">
+              <div className="p-4 rounded-xl border border-blue-200 bg-blue-50/60 dark:bg-blue-950/40 dark:border-blue-900 text-xs space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="size-8 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-xs">
                       Rzp
                     </div>
                     <div>
-                      <h4 className="text-sm font-bold text-blue-950 dark:text-blue-100">
+                      <strong className="font-bold text-blue-950 dark:text-blue-100 block">
                         Razorpay Standard Checkout
-                      </h4>
-                      <p className="text-xs text-blue-600 dark:text-blue-400">
-                        Credit/Debit Cards, UPI Apps, NetBanking, EMI & Wallets
-                      </p>
+                      </strong>
+                      <span className="text-[11px] text-blue-600 dark:text-blue-400">
+                        Cards, UPI, NetBanking, EMI & Wallets
+                      </span>
                     </div>
                   </div>
-                  <span
-                    className={`text-xs font-bold px-2.5 py-1 rounded-full ${
-                      isTestMode
-                        ? "text-amber-800 bg-amber-100"
-                        : "text-emerald-800 bg-emerald-100"
-                    }`}
-                  >
-                    {isTestMode ? "Test Keys Active" : "Production Ready"}
-                  </span>
+                  <Badge variant="info">Online</Badge>
                 </div>
 
-                <div className="mt-3 pt-3 border-t border-blue-200/60 dark:border-blue-900/60 text-xs text-blue-900 dark:text-blue-200 space-y-1">
-                  <div>
-                    <strong>Customer:</strong>{" "}
-                    {selectedCustomer?.name || selectedCustomer?.fullName || "Walk-in Customer"}{" "}
-                    {selectedCustomer?.phone ? `(${selectedCustomer.phone})` : ""}
-                  </div>
-                  <div>
-                    <strong>Payable Total:</strong> ₹{total.toFixed(2)}
-                  </div>
+                <div className="pt-2 border-t border-blue-200/60 dark:border-blue-900/60 text-blue-900 dark:text-blue-200 space-y-1 text-[11px]">
+                  <p>Payable Total: <strong>₹{total.toFixed(2)}</strong></p>
+                  <p>Customer: <strong>{selectedCustomer?.name || selectedCustomer?.fullName || "Walk-in Customer"}</strong></p>
                 </div>
               </div>
 
@@ -769,125 +705,180 @@ export function PaymentSection({ onBack, onComplete }) {
                 type="button"
                 onClick={handleRazorpayCheckout}
                 disabled={isProcessing}
-                className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow transition disabled:opacity-50"
+                className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-sm transition disabled:opacity-50"
               >
                 {isProcessing ? (
                   <RefreshCw className="size-4 animate-spin" />
                 ) : (
-                  <Zap size={18} />
+                  <Zap className="size-4" />
                 )}
-                <span>Launch Razorpay Checkout (₹{total.toFixed(2)})</span>
+                <span>Launch Razorpay Modal (₹{total.toFixed(2)})</span>
               </button>
             </div>
           )}
 
-          {/* Razorpay Dynamic QR with Live Timer */}
+          {/* 4. Razorpay Dynamic QR with Live Timer */}
           {isRazorpayQr && (
-            <div className="payment-input-section">
+            <div className="pt-2">
               <RazorpayQrTimer
                 amount={total}
                 orderDto={buildOrderDto("RAZORPAY", null, null)}
                 customer={selectedCustomer}
-                posRef={`RCPT-${Date.now()}`}
+                posRef={posReceiptRef}
                 onPaymentSuccess={handleQrPaymentSuccess}
                 onError={(msg) => setFailureError(msg)}
               />
             </div>
           )}
 
-          {/* Stripe Gateway */}
+          {/* 5. UPI (Manual Reference) */}
+          {isUpi && (
+            <div className="space-y-4 pt-2">
+              <div className="p-4 rounded-xl bg-gray-50 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800 flex items-center gap-3.5 text-xs">
+                <div className="size-11 rounded-xl bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-100 dark:border-emerald-800">
+                  <QrCode className="size-6" />
+                </div>
+                <div>
+                  <strong className="text-gray-900 dark:text-white block font-bold">
+                    Store Static QR Scan
+                  </strong>
+                  <span className="text-gray-400 text-[11px]">
+                    Customer scans store QR code via PhonePe, GPay, Paytm or BHIM.
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                  12-Digit UPI UTR / Transaction Reference *
+                </label>
+                <input
+                  type="text"
+                  value={transactionId}
+                  onChange={(e) => setTransactionId(e.target.value)}
+                  placeholder="Enter 12-digit UTR from customer's screen..."
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-xs outline-none font-mono focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-gray-900 dark:text-white"
+                  autoFocus
+                />
+                <span className="text-[11px] text-gray-400 block mt-1">
+                  Found on customer payment success receipt screen.
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* 6. Stripe Gateway */}
           {isStripe && (
-            <div className="payment-input-section">
-              <div className="p-4 rounded-xl border border-indigo-200 bg-indigo-50/60 dark:bg-indigo-950/40 dark:border-indigo-900 mb-4 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="size-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold">
+            <div className="space-y-4 pt-2">
+              <div className="p-4 rounded-xl border border-emerald-200 bg-emerald-50/60 dark:bg-emerald-950/40 dark:border-emerald-900 text-xs flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="size-8 rounded-lg bg-emerald-800 text-white flex items-center justify-center font-bold text-xs">
                     S
                   </div>
                   <div>
-                    <h4 className="text-sm font-bold text-indigo-950 dark:text-indigo-100">
-                      Stripe Terminal
-                    </h4>
-                    <p className="text-xs text-indigo-600 dark:text-indigo-400">
-                      International Cards & Cross-border Payments
-                    </p>
+                    <strong className="font-bold text-emerald-950 dark:text-emerald-100 block">
+                      Stripe Terminal Gateway
+                    </strong>
+                    <span className="text-[11px] text-emerald-700 dark:text-emerald-400">
+                      Cross-border & International Credit Cards
+                    </span>
                   </div>
                 </div>
+                <Badge variant="success">Global</Badge>
               </div>
             </div>
           )}
-        </section>
+        </div>
 
-        {/* Order & Customer Summary Section */}
-        <section className="payment-summary">
-          <h3>Order & Customer Summary</h3>
+        {/* Right Column: Customer & Order Reconciliation Card */}
+        <div className="lg:col-span-5 xl:col-span-4 p-6 rounded-2xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-sm space-y-4 sticky top-4">
+          <h3 className="text-base font-bold text-gray-900 dark:text-white">
+            Order & Customer Summary
+          </h3>
 
-          <div className="payment-customer">
-            <span>Customer</span>
-            <strong style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-              <User size={14} color="#174b35" />
-              {selectedCustomer?.name || selectedCustomer?.fullName || "Walk-in Customer"}
-            </strong>
+          {/* Customer Summary Box */}
+          <div className="p-3.5 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 flex items-center justify-between text-xs">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="size-8 rounded-lg bg-emerald-800 text-white font-bold flex items-center justify-center text-xs shrink-0 shadow-2xs">
+                <User className="size-4" />
+              </div>
+              <div className="min-w-0">
+                <strong className="font-bold text-gray-900 dark:text-white block truncate">
+                  {selectedCustomer?.name || selectedCustomer?.fullName || "Walk-in Customer"}
+                </strong>
+                <span className="text-[11px] text-gray-500 dark:text-gray-400 block truncate">
+                  {selectedCustomer?.phone || "No phone linked"}
+                </span>
+              </div>
+            </div>
+
+            <Badge variant="success" size="sm">
+              {selectedCustomer?.id ? "Assigned" : "Walk-in"}
+            </Badge>
           </div>
 
-          {selectedCustomer?.phone && (
-            <div style={{ fontSize: "12px", color: "#6b7280", marginTop: "-10px", marginBottom: "14px", textAlign: "right" }}>
-              Phone: {selectedCustomer.phone}
-            </div>
-          )}
-
-          <div className="payment-products">
-            <span style={{ fontSize: "12px", fontWeight: "600", color: "#6b7280", display: "block", marginBottom: "8px" }}>
+          {/* Purchased Items List */}
+          <div className="p-3.5 rounded-xl bg-gray-50 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800 space-y-2 text-xs">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 block pb-1 border-b border-gray-200 dark:border-gray-700">
               Purchased Items ({cartItems.length})
             </span>
-            {cartItems.map((item) => (
-              <div className="payment-product" key={item.id}>
-                <span>
-                  {item.name} × <strong>{item.quantity}</strong>
-                </span>
-                <strong>₹{((item.price || item.sellingPrice || 0) * item.quantity).toFixed(2)}</strong>
+
+            <div className="max-h-36 overflow-y-auto space-y-1.5 divide-y divide-gray-100 dark:divide-gray-800">
+              {cartItems.map((item) => (
+                <div key={item.id} className="pt-1.5 first:pt-0 flex justify-between items-center">
+                  <div className="min-w-0 pr-2">
+                    <span className="font-semibold text-gray-800 dark:text-gray-200 block truncate">
+                      {item.name}
+                    </span>
+                    <span className="text-[10px] text-gray-400">
+                      Qty: {item.quantity} × ₹{Number(item.price || item.sellingPrice || 0).toFixed(2)}
+                    </span>
+                  </div>
+                  <strong className="font-mono text-gray-900 dark:text-white shrink-0">
+                    ₹{((item.price || item.sellingPrice || 0) * item.quantity).toFixed(2)}
+                  </strong>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Breakdown Numbers */}
+          <div className="space-y-1.5 text-xs text-gray-600 dark:text-gray-400">
+            <div className="flex justify-between">
+              <span>Subtotal</span>
+              <span className="font-mono text-gray-900 dark:text-white">₹{subtotal.toFixed(2)}</span>
+            </div>
+
+            {discount > 0 && (
+              <div className="flex justify-between text-emerald-700 dark:text-emerald-400 font-semibold">
+                <span>Discount</span>
+                <span className="font-mono">-₹{discount.toFixed(2)}</span>
               </div>
-            ))}
+            )}
+
+            <div className="flex justify-between">
+              <span>Tax (GST 5%)</span>
+              <span className="font-mono text-gray-900 dark:text-white">₹{tax.toFixed(2)}</span>
+            </div>
+
+            <div className="pt-2 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center text-sm font-bold text-emerald-800 dark:text-emerald-300">
+              <span>Grand Total</span>
+              <span className="font-mono text-base">₹{total.toFixed(2)}</span>
+            </div>
           </div>
 
-          <div className="summary-row">
-            <span>Subtotal</span>
-            <span>₹{subtotal.toFixed(2)}</span>
-          </div>
-
-          <div className="summary-row">
-            <span>Discount Applied</span>
-            <span style={{ color: discount > 0 ? "#16a34a" : "inherit" }}>
-              -₹{discount.toFixed(2)}
-            </span>
-          </div>
-
-          <div className="summary-row">
-            <span>Tax (5% GST)</span>
-            <span>₹{tax.toFixed(2)}</span>
-          </div>
-
-          <div className="payment-total">
-            <span>Grand Total Payable</span>
-            <strong>₹{total.toFixed(2)}</strong>
-          </div>
-
-          {/* Confirm Button for Cash, Card, UPI, Stripe, Razorpay */}
+          {/* Confirm Button */}
           {!isRazorpayQr && (
             <button
               type="button"
-              className="confirm-payment-btn"
               disabled={!canPay || isProcessing}
               onClick={handlePayment}
-              style={{
-                marginTop: "20px",
-                opacity: canPay && !isProcessing ? 1 : 0.45,
-                cursor: canPay && !isProcessing ? "pointer" : "not-allowed",
-              }}
+              className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white font-bold text-xs shadow-sm transition disabled:opacity-45 disabled:cursor-not-allowed"
             >
               {isProcessing ? (
                 <RefreshCw className="size-4 animate-spin" />
               ) : (
-                <CheckCircle size={19} />
+                <CheckCircle className="size-4" />
               )}
               <span>
                 {isProcessing
@@ -900,18 +891,16 @@ export function PaymentSection({ onBack, onComplete }) {
           )}
 
           {isRazorpayQr && (
-            <div className="mt-5 p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-center text-xs text-emerald-800 dark:text-emerald-300">
+            <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-center text-xs text-emerald-800 dark:text-emerald-300">
               <span className="font-semibold block mb-0.5">Listening for Payment</span>
               When customer completes UPI payment on their mobile, this register will automatically verify and complete the order.
             </div>
           )}
 
           {!canPay && validationMessage && !isRazorpayQr && (
-            <p style={{ color: "#dc2626", fontSize: "12px", textAlign: "center", marginTop: "10px" }}>
-              {validationMessage}
-            </p>
+            <p className="text-xs text-rose-600 text-center">{validationMessage}</p>
           )}
-        </section>
+        </div>
       </div>
     </div>
   );

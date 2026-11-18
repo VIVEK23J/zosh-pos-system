@@ -1,8 +1,12 @@
 export const ROLES = {
-  SUPER_ADMIN: "SUPER_ADMIN",
-  STORE_ADMIN: "STORE_ADMIN",
-  MANAGER: "MANAGER",
-  CASHIER: "CASHIER",
+  SUPER_ADMIN: "ROLE_SUPER_ADMIN",
+  STORE_ADMIN: "ROLE_STORE_ADMIN",
+  MANAGER: "ROLE_MANAGER",
+  CASHIER: "ROLE_CASHIER",
+  BRANCH_ADMIN: "ROLE_MANAGER",
+  BRANCH_MANAGER: "ROLE_MANAGER",
+  ADMIN: "ROLE_SUPER_ADMIN",
+  USER: "ROLE_CASHIER",
 };
 
 export const ROLE_LABELS = {
@@ -10,17 +14,29 @@ export const ROLE_LABELS = {
   [ROLES.STORE_ADMIN]: "Store Admin",
   [ROLES.MANAGER]: "Branch Manager",
   [ROLES.CASHIER]: "Cashier",
+  // Legacy / Unprefixed alias support
+  SUPER_ADMIN: "Super Admin",
+  STORE_ADMIN: "Store Admin",
+  MANAGER: "Branch Manager",
+  BRANCH_ADMIN: "Branch Manager",
+  BRANCH_MANAGER: "Branch Manager",
+  CASHIER: "Cashier",
 };
 
 /**
- * Normalizes backend role representations (including legacy values)
- * into one of the four supported RBAC roles.
+ * Normalizes backend role representations (including legacy and unprefixed values)
+ * into the canonical Spring Boot UserRoles enum values.
  */
 export function normalizeRole(role) {
   if (!role) return "";
   const upper = String(role).toUpperCase();
 
-  if (upper === "ROLE_SUPER_ADMIN" || upper === "ROLE_ADMIN" || upper === "SUPER_ADMIN") {
+  if (
+    upper === "ROLE_SUPER_ADMIN" ||
+    upper === "ROLE_ADMIN" ||
+    upper === "SUPER_ADMIN" ||
+    upper === "ADMIN"
+  ) {
     return ROLES.SUPER_ADMIN;
   }
   if (upper === "ROLE_STORE_ADMIN" || upper === "STORE_ADMIN") {
@@ -31,16 +47,23 @@ export function normalizeRole(role) {
     upper === "ROLE_BRANCH_MANAGER" ||
     upper === "ROLE_STORE_MANAGER" ||
     upper === "BRANCH_MANAGER" ||
+    upper === "BRANCH_ADMIN" ||
+    upper === "ROLE_BRANCH_ADMIN" ||
     upper === "STORE_MANAGER" ||
     upper === "MANAGER"
   ) {
     return ROLES.MANAGER;
   }
-  if (upper === "ROLE_CASHIER" || upper === "CASHIER") {
+  if (
+    upper === "ROLE_CASHIER" ||
+    upper === "CASHIER" ||
+    upper === "ROLE_USER" ||
+    upper === "USER"
+  ) {
     return ROLES.CASHIER;
   }
 
-  return upper;
+  return upper.startsWith("ROLE_") ? upper : `ROLE_${upper}`;
 }
 
 /**

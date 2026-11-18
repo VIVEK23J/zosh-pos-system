@@ -4,10 +4,10 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useDispatch } from "react-redux";
-import { User, Mail, Phone, Lock, Store, ArrowRight, UserPlus } from "lucide-react";
+import { User, Mail, Phone, Lock, ArrowRight, UserPlus } from "lucide-react";
 import { authService } from "../../services/authService";
 import { loginSuccess } from "../../store/authSlice";
-import { ROLES } from "../../constants/roles";
+import { ROLES, normalizeRole, getRoleDashboard } from "../../constants/roles";
 import { useToast } from "../../components/common/Toast";
 
 const registerSchema = z.object({
@@ -38,10 +38,15 @@ export function Register() {
   const onSubmit = async (data) => {
     setLoading(true);
     try {
-      const res = await authService.signup(data);
+      const payload = {
+        ...data,
+        role: normalizeRole(data.role || ROLES.STORE_ADMIN),
+      };
+      const res = await authService.signup(payload);
       dispatch(loginSuccess(res));
       toast.success("Registration Successful!", "Welcome to Zosh POS Enterprise.");
-      navigate("/store/dashboard");
+      const targetDashboard = getRoleDashboard(res?.user?.role || payload.role);
+      navigate(targetDashboard);
     } catch (err) {
       toast.error("Registration Failed", err.response?.data?.message || "Could not register account");
     } finally {
@@ -135,7 +140,7 @@ export function Register() {
             className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-xs text-gray-900 dark:text-white outline-none"
           >
             <option value={ROLES.STORE_ADMIN}>Store Owner / Admin</option>
-            <option value={ROLES.BRANCH_ADMIN}>Branch Manager</option>
+            <option value={ROLES.MANAGER}>Branch Manager</option>
             <option value={ROLES.CASHIER}>Cashier</option>
           </select>
         </div>

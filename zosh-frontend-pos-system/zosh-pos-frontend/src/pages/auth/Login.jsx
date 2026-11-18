@@ -1,14 +1,13 @@
-import { useState } from "react";
 import { Link, useNavigate } from "@/lib/rr-compat";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useDispatch, useSelector } from "react-redux";
-import { Mail, Lock, LogIn, ArrowRight, Sparkles } from "lucide-react";
+import { Mail, Lock, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { authService } from "../../services/authService";
 import { loginSuccess, setLoading, setError } from "../../store/authSlice";
-import { ROLES, getRoleDashboard } from "../../constants/roles";
+import { getRoleDashboard } from "../../constants/roles";
 import { useToast } from "../../components/common/Toast";
 
 const loginSchema = z.object({
@@ -22,18 +21,15 @@ export function Login() {
   const toast = useToast();
   const { isLoading, error } = useSelector((state) => state.auth);
 
-  const [demoRole, setDemoRole] = useState(ROLES.CASHIER);
-
   const {
     register,
     handleSubmit,
-    setValue,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: "cashier@zoshpos.com",
-      password: "123456",
+      email: "",
+      password: "",
     },
   });
 
@@ -54,12 +50,6 @@ export function Login() {
     }
   };
 
-  const handleQuickFill = (role, email) => {
-    setDemoRole(role);
-    setValue("email", email);
-    setValue("password", "123456");
-  };
-
   return (
     <div>
       <div className="mb-8">
@@ -69,60 +59,6 @@ export function Login() {
         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
           Welcome back to Zosh POS.
         </p>
-      </div>
-
-      {/* Role Credentials Quick Switcher */}
-      <div className="login-role-selector">
-        <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-300 mb-2">
-          
-          <span>Demo accounts</span>
-        </div>
-        <div className="role-tabs">
-          <Button variant="ghost"
-            type="button"
-            onClick={() => handleQuickFill(ROLES.CASHIER, "cashier@zoshpos.com")}
-            className={`p-1.5 rounded-lg border text-left font-medium transition ${
-              demoRole === ROLES.CASHIER
-                ? "bg-white dark:bg-gray-800 border-emerald-400 text-emerald-700 dark:text-emerald-300 font-bold shadow-xs"
-                : "bg-transparent border-transparent hover:bg-white/50 text-gray-600 dark:text-gray-300"
-            }`}
-          >
-            Cashier POS
-          </Button>
-          <Button variant="ghost"
-            type="button"
-            onClick={() => handleQuickFill(ROLES.MANAGER, "manager@zoshpos.com")}
-            className={`p-1.5 rounded-lg border text-left font-medium transition ${
-              demoRole === ROLES.MANAGER
-                ? "bg-white dark:bg-gray-800 border-emerald-400 text-emerald-700 dark:text-emerald-300 font-bold shadow-xs"
-                : "bg-transparent border-transparent hover:bg-white/50 text-gray-600 dark:text-gray-300"
-            }`}
-          >
-            Branch Manager
-          </Button>
-          <Button variant="ghost"
-            type="button"
-            onClick={() => handleQuickFill(ROLES.STORE_ADMIN, "storeadmin@zoshpos.com")}
-            className={`p-1.5 rounded-lg border text-left font-medium transition ${
-              demoRole === ROLES.STORE_ADMIN
-                ? "bg-white dark:bg-gray-800 border-emerald-400 text-emerald-700 dark:text-emerald-300 font-bold shadow-xs"
-                : "bg-transparent border-transparent hover:bg-white/50 text-gray-600 dark:text-gray-300"
-            }`}
-          >
-            Store Admin
-          </Button>
-          <Button variant="ghost"
-            type="button"
-            onClick={() => handleQuickFill(ROLES.SUPER_ADMIN, "admin@zoshpos.com")}
-            className={`p-1.5 rounded-lg border text-left font-medium transition ${
-              demoRole === ROLES.SUPER_ADMIN
-                ? "bg-white dark:bg-gray-800 border-emerald-400 text-emerald-700 dark:text-emerald-300 font-bold shadow-xs"
-                : "bg-transparent border-transparent hover:bg-white/50 text-gray-600 dark:text-gray-300"
-            }`}
-          >
-            Super Admin
-          </Button>
-        </div>
       </div>
 
       {error && (
@@ -191,16 +127,6 @@ export function Login() {
           )}
         </Button>
       </form>
-
-      <div className="mt-6 text-center text-xs text-gray-500 dark:text-gray-400">
-        New merchant store?{" "}
-        <Link
-          to="/auth/register"
-          className="font-bold text-emerald-600 dark:text-emerald-400 hover:underline inline-flex items-center gap-0.5"
-        >
-          Create an account <ArrowRight className="size-3" />
-        </Link>
-      </div>
     </div>
   );
 }

@@ -7,10 +7,12 @@ import {
   X,
   Phone,
   Mail,
+  User,
 } from "lucide-react";
 import { useSelector } from "react-redux";
+import { Badge } from "../common/Badge";
 
-function CustomerTable({
+export function CustomerTable({
   customers,
   search,
   setSearch,
@@ -40,255 +42,208 @@ function CustomerTable({
   });
 
   return (
-    <div className="customer-table-card">
-      <div className="customer-table-heading">
+    <div className="p-6 rounded-2xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-sm space-y-4">
+      {/* Table Header & Filters */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2>Registered Customers Directory</h2>
-          <p>
+          <h3 className="text-base font-bold text-gray-900 dark:text-white">
+            Registered Customers Directory
+          </h3>
+          <p className="text-xs text-gray-500 dark:text-gray-400">
             Showing {filteredCustomers.length} of {customers.length} total customers
           </p>
         </div>
 
-        <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", alignItems: "center" }}>
+        <div className="flex flex-wrap items-center gap-3">
           {/* Status Filter Tabs */}
-          <div style={{ display: "flex", background: "#f3f4f6", padding: "3px", borderRadius: "8px", gap: "2px" }}>
+          <div className="flex items-center gap-1 p-1 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-xs">
             {["All", "Active", "Inactive"].map((st) => (
               <button
                 key={st}
                 type="button"
                 onClick={() => setStatusFilter(st)}
-                style={{
-                  border: "none",
-                  padding: "6px 12px",
-                  borderRadius: "6px",
-                  fontSize: "12px",
-                  fontWeight: "600",
-                  cursor: "pointer",
-                  background: statusFilter === st ? "#ffffff" : "transparent",
-                  color: statusFilter === st ? "#174b35" : "#6b7280",
-                  boxShadow: statusFilter === st ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
-                }}
+                className={`px-3 py-1 rounded-lg font-semibold transition ${
+                  statusFilter === st
+                    ? "bg-emerald-800 text-white shadow-2xs"
+                    : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
+                }`}
               >
                 {st}
               </button>
             ))}
           </div>
 
-          <div className="customer-table-search">
-            <Search size={16} color="#6b7280" />
+          {/* Search Box */}
+          <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-xs w-full sm:w-64">
+            <Search className="size-3.5 text-gray-400 shrink-0" />
             <input
+              type="text"
               placeholder="Search by name, phone, email..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
+              className="w-full bg-transparent outline-none text-xs text-gray-900 dark:text-white placeholder:text-gray-400"
             />
             {search && (
               <button
                 type="button"
                 onClick={() => setSearch("")}
-                style={{
-                  background: "transparent",
-                  border: "none",
-                  cursor: "pointer",
-                  color: "#9ca3af",
-                  display: "grid",
-                  placeItems: "center",
-                }}
+                className="text-gray-400 hover:text-gray-600"
               >
-                <X size={15} />
+                <X className="size-3" />
               </button>
             )}
           </div>
         </div>
       </div>
 
-      <div className="customer-table-scroll">
-        <table className="customer-table">
-          <thead>
+      {/* Customer Records Table */}
+      <div className="overflow-x-auto">
+        <table className="w-full text-left text-xs">
+          <thead className="bg-gray-50 dark:bg-gray-800/50 text-gray-400 uppercase font-semibold text-[10px] tracking-wider border-b border-gray-100 dark:border-gray-800">
             <tr>
-              <th>Customer</th>
-              <th>Contact Details</th>
-              <th>Address</th>
-              <th>Orders</th>
-              <th>Total Spent</th>
-              <th>Status</th>
-              <th style={{ textAlign: "right" }}>Actions</th>
+              <th className="px-4 py-3">Customer</th>
+              <th className="px-4 py-3">Contact Details</th>
+              <th className="px-4 py-3">Address</th>
+              <th className="px-4 py-3 text-center">Orders</th>
+              <th className="px-4 py-3">Total Spent</th>
+              <th className="px-4 py-3">Status</th>
+              <th className="px-4 py-3 text-right">Actions</th>
             </tr>
           </thead>
 
-          <tbody>
+          <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
             {filteredCustomers.map((customer) => {
               const isSelected = selectedCustomer?.id === customer.id;
 
               return (
                 <tr
                   key={customer.id}
-                  style={{
-                    backgroundColor: isSelected ? "#f0fdf4" : undefined,
-                  }}
+                  className={`hover:bg-gray-50/60 dark:hover:bg-gray-800/40 transition ${
+                    isSelected ? "bg-emerald-50/40 dark:bg-emerald-950/20" : ""
+                  }`}
                 >
-                  <td>
-                    <div className="table-customer">
+                  <td className="px-4 py-3.5">
+                    <div className="flex items-center gap-3">
                       <div
-                        className="table-avatar"
-                        style={{
-                          backgroundColor: isSelected ? "#174b35" : undefined,
-                          color: isSelected ? "#ffffff" : undefined,
-                        }}
+                        className={`size-9 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs ${
+                          isSelected
+                            ? "bg-emerald-800 text-white"
+                            : "bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800"
+                        }`}
                       >
-                        {customer.name.charAt(0).toUpperCase()}
+                        {(customer.name || customer.fullName || "C")
+                          .charAt(0)
+                          .toUpperCase()}
                       </div>
 
                       <div>
-                        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                          <strong>{customer.name}</strong>
+                        <div className="flex items-center gap-1.5">
+                          <strong className="text-xs font-bold text-gray-900 dark:text-white">
+                            {customer.name || customer.fullName}
+                          </strong>
                           {isSelected && (
-                            <span
-                              style={{
-                                background: "#bbf7d0",
-                                color: "#166534",
-                                fontSize: "10px",
-                                fontWeight: "700",
-                                padding: "1px 5px",
-                                borderRadius: "4px",
-                              }}
-                            >
+                            <span className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300 text-[9px] font-bold px-1.5 py-0.5 rounded">
                               CURRENT POS
                             </span>
                           )}
                         </div>
-                        <span style={{ fontSize: "12px", color: "#6b7280" }}>
-                          ID: #{customer.id.toString().slice(-4)}
+                        <span className="text-[11px] text-gray-400 block font-mono">
+                          ID: #{String(customer.id).slice(-4)}
                         </span>
                       </div>
                     </div>
                   </td>
 
-                  <td>
-                    <div style={{ display: "flex", flexDirection: "column", gap: "2px", fontSize: "13px" }}>
-                      <span style={{ display: "flex", alignItems: "center", gap: "5px" }}>
-                        <Phone size={12} color="#6b7280" />
+                  <td className="px-4 py-3.5 text-gray-600 dark:text-gray-300">
+                    <div className="space-y-0.5 text-xs">
+                      <span className="flex items-center gap-1.5 font-mono">
+                        <Phone className="size-3 text-emerald-700 dark:text-emerald-400" />
                         {customer.phone}
                       </span>
                       {customer.email && (
-                        <span style={{ display: "flex", alignItems: "center", gap: "5px", color: "#6b7280", fontSize: "12px" }}>
-                          <Mail size={12} color="#9ca3af" />
+                        <span className="flex items-center gap-1.5 text-gray-400 text-[11px]">
+                          <Mail className="size-3" />
                           {customer.email}
                         </span>
                       )}
                     </div>
                   </td>
 
-                  <td style={{ maxWidth: "200px" }}>
-                    <span
-                      title={customer.address}
-                      style={{
-                        display: "-webkit-box",
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: "vertical",
-                        overflow: "hidden",
-                        fontSize: "13px",
-                        color: "#4b5563",
-                      }}
-                    >
-                      {customer.address || "—"}
-                    </span>
+                  <td className="px-4 py-3.5 max-w-[180px] text-gray-500 dark:text-gray-400 truncate">
+                    {customer.address || "—"}
                   </td>
 
-                  <td>
-                    <strong style={{ fontSize: "14px" }}>
-                      {customer.totalOrders}
-                    </strong>
+                  <td className="px-4 py-3.5 text-center font-mono font-bold text-gray-800 dark:text-gray-200">
+                    {customer.totalOrders}
                   </td>
 
-                  <td>
-                    <strong style={{ color: "#174b35", fontSize: "14px" }}>
-                      ₹{(customer.totalSpent || 0).toLocaleString("en-IN")}
-                    </strong>
+                  <td className="px-4 py-3.5 font-mono font-bold text-emerald-800 dark:text-emerald-400">
+                    ₹{(customer.totalSpent || 0).toLocaleString("en-IN")}
                   </td>
 
-                  <td>
-                    <span
-                      className="customer-status"
-                      style={{
-                        background: customer.status === "Active" ? "#e6f4ea" : "#f1f3f4",
-                        color: customer.status === "Active" ? "#137333" : "#5f6368",
-                        padding: "3px 8px",
-                        borderRadius: "12px",
-                        fontSize: "11px",
-                        fontWeight: "600",
-                        display: "inline-block",
-                      }}
-                    >
+                  <td className="px-4 py-3.5">
+                    <Badge variant={customer.status === "Active" ? "success" : "default"}>
                       {customer.status || "Active"}
-                    </span>
+                    </Badge>
                   </td>
 
-                  <td>
-                    <div className="customer-actions" style={{ justifyContent: "flex-end" }}>
+                  <td className="px-4 py-3.5 text-right">
+                    <div className="flex items-center justify-end gap-1.5">
                       <button
                         type="button"
                         title="Select for POS order"
                         onClick={() => onSelectForOrder(customer)}
-                        style={{
-                          color: isSelected ? "#16a34a" : "#174b35",
-                          background: isSelected ? "#dcfce7" : "#f0fdf4",
-                          padding: "6px 9px",
-                          borderRadius: "6px",
-                          border: "1px solid #bbf7d0",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "4px",
-                          fontSize: "12px",
-                          fontWeight: "600",
-                        }}
+                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold transition ${
+                          isSelected
+                            ? "bg-emerald-900 text-white shadow-2xs"
+                            : "bg-emerald-800 hover:bg-emerald-900 text-white shadow-xs"
+                        }`}
                       >
-                        <CheckCircle size={14} />
-                        {isSelected ? "Selected" : "Bill"}
+                        <CheckCircle className="size-3.5" />
+                        <span>{isSelected ? "Selected" : "Select"}</span>
                       </button>
 
                       <button
                         type="button"
                         title="View profile"
                         onClick={() => onView(customer)}
+                        className="p-1 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
                       >
-                        <Eye size={16} />
+                        <Eye className="size-4" />
                       </button>
 
                       <button
                         type="button"
                         title="Edit customer"
                         onClick={() => onEdit(customer)}
+                        className="p-1 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
                       >
-                        <Pencil size={16} />
+                        <Pencil className="size-4" />
                       </button>
 
                       <button
                         type="button"
                         title="Delete customer"
                         onClick={() => onDelete(customer.id, customer.name)}
+                        className="p-1 rounded-lg text-gray-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition"
                       >
-                        <Trash2 size={16} />
+                        <Trash2 className="size-4" />
                       </button>
                     </div>
                   </td>
                 </tr>
               );
             })}
-
-            {filteredCustomers.length === 0 && (
-              <tr>
-                <td colSpan="7" className="customer-no-results" style={{ textAlign: "center", padding: "40px" }}>
-                  <p style={{ color: "#374151", fontWeight: "600", marginBottom: "4px" }}>
-                    No customers match your criteria.
-                  </p>
-                  <span style={{ color: "#9ca3af", fontSize: "13px" }}>
-                    Try adjusting search keywords or changing the status filter.
-                  </span>
-                </td>
-              </tr>
-            )}
           </tbody>
         </table>
+
+        {filteredCustomers.length === 0 && (
+          <div className="p-8 text-center text-xs text-gray-400 space-y-2">
+            <User className="size-8 mx-auto text-gray-300 dark:text-gray-600" />
+            <p className="font-semibold text-gray-600 dark:text-gray-300">No customers found</p>
+            <p>Try searching for a different keyword or switch the status filter.</p>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -18,7 +18,11 @@ export const authService = {
   },
 
   signup: async (userData) => {
-    const response = await api.post("/auth/signup", userData);
+    const payload = {
+      ...userData,
+      role: normalizeRole(userData?.role || ROLES.STORE_ADMIN),
+    };
+    const response = await api.post("/auth/signup", payload);
     const data = response.data;
     if (data && data.user) {
       data.user = {

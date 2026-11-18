@@ -1,8 +1,10 @@
-import { X, Phone, Mail, MapPin, ShoppingBag, IndianRupee, TrendingUp, CheckCircle } from "lucide-react";
+import { Phone, Mail, MapPin, ShoppingBag, IndianRupee, TrendingUp, CheckCircle } from "lucide-react";
 import { useDispatch } from "react-redux";
 import { setSelectedCustomer } from "../../store/customerSlice";
+import { Modal } from "../common/Modal";
+import { Badge } from "../common/Badge";
 
-function CustomerDetails({ customer, onClose, onStartOrder }) {
+export function CustomerDetails({ customer, onClose, onStartOrder }) {
   const dispatch = useDispatch();
 
   if (!customer) return null;
@@ -21,93 +23,88 @@ function CustomerDetails({ customer, onClose, onStartOrder }) {
   };
 
   return (
-    <div className="customer-modal-overlay">
-      <div className="customer-details-modal">
-        <div className="customer-modal-header">
-          <h2 style={{ fontSize: "18px", color: "#111827", margin: 0 }}>
-            Customer Profile
-          </h2>
-
-          <button type="button" onClick={onClose} aria-label="Close dialog">
-            <X size={20} />
-          </button>
-        </div>
-
-        <div className="customer-profile">
-          <div className="profile-avatar">
-            {customer.name.charAt(0).toUpperCase()}
+    <Modal
+      isOpen={true}
+      onClose={onClose}
+      title="Customer Profile & History"
+      subtitle={`Account record for ${customer.name || customer.fullName}`}
+    >
+      <div className="space-y-4 text-xs">
+        {/* Customer Avatar & Hero Banner */}
+        <div className="p-4 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="size-12 rounded-xl bg-emerald-800 text-white font-bold text-lg flex items-center justify-center shadow-xs">
+              {(customer.name || customer.fullName || "C").charAt(0).toUpperCase()}
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-gray-900 dark:text-white">
+                {customer.name || customer.fullName}
+              </h3>
+              <span className="text-[11px] text-gray-500 dark:text-gray-400 font-mono">
+                Customer Record #{customer.id}
+              </span>
+            </div>
           </div>
 
-          <h2 style={{ fontSize: "20px", fontWeight: "700", margin: 0 }}>
-            {customer.name}
-          </h2>
-
-          <span
-            className="customer-status"
-            style={{
-              background: customer.status === "Active" ? "#e6f4ea" : "#f1f3f4",
-              color: customer.status === "Active" ? "#137333" : "#5f6368",
-              padding: "3px 10px",
-              borderRadius: "12px",
-              fontSize: "12px",
-              fontWeight: "600",
-            }}
-          >
+          <Badge variant="success">
             {customer.status || "Active"}
-          </span>
+          </Badge>
         </div>
 
-        <div className="profile-information">
-          <p>
-            <Mail size={16} color="#174b35" />
+        {/* Contact Info Well */}
+        <div className="p-4 rounded-xl bg-gray-50 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800 space-y-2 text-xs">
+          <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
+            <Phone className="size-3.5 text-emerald-700 dark:text-emerald-400 shrink-0" />
+            <span className="font-mono">{customer.phone}</span>
+          </div>
+
+          <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
+            <Mail className="size-3.5 text-emerald-700 dark:text-emerald-400 shrink-0" />
             <span>{customer.email || "No email registered"}</span>
-          </p>
-
-          <p>
-            <Phone size={16} color="#174b35" />
-            <span>{customer.phone}</span>
-          </p>
-
-          <p>
-            <MapPin size={16} color="#174b35" />
-            <span>{customer.address || "No address specified"}</span>
-          </p>
-        </div>
-
-        <div className="profile-stats">
-          <div>
-            <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-              <ShoppingBag size={13} /> Total Orders
-            </span>
-            <strong>{customer.totalOrders}</strong>
           </div>
 
-          <div>
-            <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-              <IndianRupee size={13} /> Total Spent
-            </span>
-            <strong>₹{(customer.totalSpent || 0).toLocaleString("en-IN")}</strong>
-          </div>
-
-          <div style={{ gridColumn: "1 / -1" }}>
-            <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-              <TrendingUp size={13} /> Avg Spend / Order
-            </span>
-            <strong>₹{avgOrderValue.toFixed(2)}</strong>
+          <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
+            <MapPin className="size-3.5 text-emerald-700 dark:text-emerald-400 shrink-0" />
+            <span>{customer.address || "No address provided"}</span>
           </div>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginTop: "24px" }}>
+        {/* KPI Mini-cards */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="p-3 rounded-xl bg-gray-50 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800">
+            <span className="text-[10px] text-gray-400 uppercase tracking-wider flex items-center gap-1 font-semibold block mb-0.5">
+              <ShoppingBag className="size-3" /> Total Orders
+            </span>
+            <strong className="text-base font-bold text-gray-900 dark:text-white font-mono">
+              {customer.totalOrders}
+            </strong>
+          </div>
+
+          <div className="p-3 rounded-xl bg-gray-50 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800">
+            <span className="text-[10px] text-gray-400 uppercase tracking-wider flex items-center gap-1 font-semibold block mb-0.5">
+              <IndianRupee className="size-3" /> Total Spent
+            </span>
+            <strong className="text-base font-bold text-emerald-800 dark:text-emerald-400 font-mono">
+              ₹{(customer.totalSpent || 0).toLocaleString("en-IN")}
+            </strong>
+          </div>
+
+          <div className="col-span-2 p-3 rounded-xl bg-gray-50 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800">
+            <span className="text-[10px] text-gray-400 uppercase tracking-wider flex items-center gap-1 font-semibold block mb-0.5">
+              <TrendingUp className="size-3" /> Average Ticket Size
+            </span>
+            <strong className="text-base font-bold text-emerald-800 dark:text-emerald-300 font-mono">
+              ₹{avgOrderValue.toFixed(2)}
+            </strong>
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex justify-end gap-3 pt-3 border-t border-gray-100 dark:border-gray-800">
           <button
             type="button"
-            className="profile-close-btn"
             onClick={onClose}
-            style={{
-              margin: 0,
-              background: "#ffffff",
-              border: "1px solid #d1d5db",
-              color: "#374151",
-            }}
+            className="px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 transition"
           >
             Close
           </button>
@@ -115,26 +112,14 @@ function CustomerDetails({ customer, onClose, onStartOrder }) {
           <button
             type="button"
             onClick={handleStartOrder}
-            style={{
-              background: "#174b35",
-              color: "white",
-              border: "none",
-              borderRadius: "7px",
-              padding: "12px",
-              fontWeight: "600",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "6px",
-            }}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white text-xs font-semibold shadow-sm transition"
           >
-            <CheckCircle size={16} />
-            Bill Customer
+            <CheckCircle className="size-4" />
+            <span>Select & Bill on POS</span>
           </button>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }
 

@@ -1,6 +1,6 @@
 import api from "./api";
 import { mockEmployees } from "./mockData";
-import { ROLES } from "../constants/roles";
+import { ROLES, normalizeRole } from "../constants/roles";
 
 export const normalizeEmployee = (e) => {
   if (!e) return e;
@@ -10,7 +10,7 @@ export const normalizeEmployee = (e) => {
     fullName: e.fullName || "Staff Member",
     email: e.email || "staff@zoshpos.com",
     phone: e.phone || "9876543210",
-    role: e.role || ROLES.CASHIER,
+    role: normalizeRole(e.role || ROLES.CASHIER),
     status: e.status || "ACTIVE",
     totalSales: Number(e.totalSales || 0),
     storeId: e.storeId || 1,
@@ -54,7 +54,7 @@ export const employeeService = {
       fullName: data.fullName,
       email: data.email,
       phone: data.phone,
-      role: data.role || ROLES.CASHIER,
+      role: normalizeRole(data.role || ROLES.CASHIER),
       password: data.password || "password123",
       branchId: data.branchId ? Number(data.branchId) : null,
       storeId: Number(storeId || 1),
@@ -74,7 +74,7 @@ export const employeeService = {
       fullName: data.fullName,
       email: data.email,
       phone: data.phone,
-      role: data.role || ROLES.CASHIER,
+      role: normalizeRole(data.role || ROLES.CASHIER),
       password: data.password || "password123",
       branchId: Number(branchId || 1),
     };
@@ -93,7 +93,7 @@ export const employeeService = {
       fullName: data.fullName,
       email: data.email,
       phone: data.phone,
-      role: data.role,
+      role: data.role ? normalizeRole(data.role) : undefined,
       password: data.password || undefined,
       branchId: data.branchId ? Number(data.branchId) : undefined,
     };
